@@ -90,7 +90,6 @@ QString ComputeFileHash(const QString &filePath) {
 
 	QCryptographicHash hash(QCryptographicHash::Sha256);
 	constexpr qint64 kChunkSize = 512 * 1024;
-	qint64 read = 0;
 	// Fast sampling: first 2MB, middle 512KB, last 512KB + file size
 	const auto size = file.size();
 	if (size <= 4 * 1024 * 1024) {

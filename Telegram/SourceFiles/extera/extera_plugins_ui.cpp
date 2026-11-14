@@ -367,7 +367,7 @@ void FillSettings(
 	Ui::AddSkip(container);
 }
 
-void FillPermissions(
+[[maybe_unused]] void FillPermissions(
 		not_null<Ui::VerticalLayout*> container,
 		not_null<Window::SessionController*> controller,
 		const QString &id) {
@@ -915,7 +915,7 @@ void FillPluginsList(
 			});
 			actions->widthValue() | rpl::on_next([=](int width) {
 				auto left = 0;
-				for (const auto button : buttons) {
+				for (const auto &button : buttons) {
 					button->moveToLeft(left, 0, width);
 					left += button->width();
 				}

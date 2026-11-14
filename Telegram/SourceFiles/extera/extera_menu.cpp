@@ -285,7 +285,7 @@ void QuickRow::updateHovered() {
 		if (hovered >= 0 && _hideSubmenus) {
 			_hideSubmenus();
 		}
-		for (const auto button : _buttons) {
+		for (const auto &button : _buttons) {
 			button->update();
 		}
 	}
@@ -414,21 +414,24 @@ void FillDetails(
 		&st::menuIconSchedule,
 		tr::lng_extera_details_date(tr::now),
 		FormatFullDate(item->date()));
-	if (item->hasDirectLink()) {
-		if (const auto ms = item->layout()->customSenderTitle()) {
-			if (ms->media && ms->media->isEdited()) {
-				add(
-					&st::menuIconEdit,
-					tr::lng_extera_details_edited(tr::now),
-					QString::fromUtf8("Yes"));
-			}
-		}
+	if (item->isEdited()) {
+		add(
+			&st::menuIconEdit,
+			tr::lng_extera_details_edited(tr::now),
+			QString::fromUtf8("Yes"));
 	}
 	if (const auto fwd = item->Get<HistoryMessageForwarded>()) {
-		add(
-			&st::menuIconForward,
-			tr::lng_extera_details_forwarded(tr::now),
-			fwd->originalSender ? fwd->originalSender->name() : fwd->originalAuthor);
+		const auto senderName = fwd->originalSender
+			? fwd->originalSender->name()
+			: (fwd->originalHiddenSenderInfo
+				? fwd->originalHiddenSenderInfo->name
+				: fwd->originalPostAuthor);
+		if (!senderName.isEmpty()) {
+			add(
+				&st::menuIconForward,
+				tr::lng_extera_details_forwarded(tr::now),
+				senderName);
+		}
 	}
 	if (const auto media = item->media()) {
 		if (const auto document = media->document()) {
@@ -466,29 +469,26 @@ void AddMessageMenuActions(
 	if (const auto media = item->media()) {
 		if (const auto photo = media->photo()) {
 			if (const auto image = photo->createMediaView(); image && image->loaded()) {
-				const auto pixmap = image->pixmap();
-				if (!pixmap.isNull()) {
-					menu->addAction(tr::lng_extera_menu_copy_photo(tr::now), [=] {
-						QGuiApplication::clipboard()->setPixmap(pixmap);
-					}, &st::menuIconCopy);
-				}
+				menu->addAction(tr::lng_extera_menu_copy_photo(tr::now), [=] {
+					image->setToClipboard();
+				}, &st::menuIconCopy);
 			}
 		}
 		if (const auto document = media->document()) {
 			const auto path = document->filepath(true);
 			if (!path.isEmpty()) {
 				menu->addAction(tr::lng_extera_menu_save(tr::now), [=] {
-					DocumentOpenClickHandler::Save(
+					DocumentSaveClickHandler::Save(
 						Data::FileOrigin(),
 						document,
-						DocumentOpenClickHandler::Mode::ForceSaveAs);
+						DocumentSaveClickHandler::Mode::ToNewFile);
 				}, &st::menuIconDownload);
 			}
 		}
 	}
 
 	const auto ip = Extera::IpInfo::ExtractIp(item->originalText().text);
-	if (!ip.isEmpty() && Extera::IpInfo::IsAvailable()) {
+	if (!ip.isEmpty()) {
 		menu->addAction(tr::lng_extera_inspect_ip(tr::now) + " (" + ip + ")", [=] {
 			Extera::IpInfo::Inspect(controller, ip);
 		}, &st::menuIconSearch);
@@ -497,12 +497,13 @@ void AddMessageMenuActions(
 	if (const auto media = item->media()) {
 		if (const auto document = media->document()) {
 			if (document->isSong()) {
-				const auto artist = document->song()->artist;
-				const auto title = document->song()->title;
-				const auto duration = document->song()->duration;
+				const auto song = document->song();
+				const auto artist = song ? song->performer : QString();
+				const auto title = song ? song->title : QString();
+				const auto duration = document->getDuration();
 				menu->addAction(tr::lng_extera_player_lyrics(tr::now), [=] {
 					Extera::Lyrics::ShowBox(controller, artist, title, duration);
-				}, &st::menuIconMusic);
+				}, &st::menuIconSoundSelect);
 			}
 		}
 	}
@@ -522,11 +523,11 @@ void AddMessageMenuActions(
 			auto action = Api::SendAction(item->history());
 			action.replyTo = item->replyTo();
 			action.generateLocal = true;
+			auto draft = Data::ResolvedForwardDraft();
+			draft.items.push_back(item);
 			item->history()->session().api().forwardMessages(
-				Data::ForwardDraft{
-					.ids = { item->fullId() },
-					.action = action,
-				},
+				std::move(draft),
+				action,
 				[=] {});
 		}, &st::menuIconRestore);
 	}
@@ -627,7 +628,7 @@ void ApplyQuickActions(not_null<Ui::PopupMenu*> menu) {
 		if (entry == end(QuickEntries())) {
 			continue;
 		}
-		for (const auto action : menu->actions()) {
+		for (const auto &action : menu->actions()) {
 			if (action->isSeparator() || action->menu()) {
 				continue;
 			}

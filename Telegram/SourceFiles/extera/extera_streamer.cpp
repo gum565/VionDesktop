@@ -55,9 +55,11 @@ protected:
 
 };
 
+#ifdef Q_OS_WIN
 [[nodiscard]] int CaptureMode() {
 	return Active() ? Int(u"streamer_capture"_q) : 0;
 }
+#endif
 
 void ApplyCapture(QWidget *widget) {
 #ifdef Q_OS_WIN
@@ -114,16 +116,6 @@ bool CaptureFilter::eventFilter(QObject *object, QEvent *event) {
 	return u"streamer_"_q + TypeKey(type) + '_' + part;
 }
 
-[[nodiscard]] ChatHide HideFor(ChatType type) {
-	if (Full()) {
-		return { .avatar = true, .name = true, .text = true };
-	}
-	return {
-		.avatar = Bool(PartKey(type, u"avatar"_q)),
-		.name = Bool(PartKey(type, u"name"_q)),
-		.text = Bool(PartKey(type, u"text"_q)),
-	};
-}
 
 [[nodiscard]] QStringList ExceptionList(const QString &key) {
 	return String(key).split(',', Qt::SkipEmptyParts);
@@ -522,6 +514,20 @@ ChatHide ForPeer(not_null<PeerData*> peer) {
 	case Exception::None: break;
 	}
 	return HideFor(TypeOf(peer));
+}
+
+ChatHide HideFor(ChatType type) {
+	if (!Active()) {
+		return {};
+	}
+	if (Full()) {
+		return { .avatar = true, .name = true, .text = true };
+	}
+	return {
+		.avatar = Bool(PartKey(type, u"avatar"_q)),
+		.name = Bool(PartKey(type, u"name"_q)),
+		.text = Bool(PartKey(type, u"text"_q)),
+	};
 }
 
 QString Name() {

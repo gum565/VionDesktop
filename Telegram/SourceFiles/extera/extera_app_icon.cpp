@@ -58,6 +58,7 @@ namespace {
 	return it->second;
 }
 
+#ifdef Q_OS_WIN
 [[nodiscard]] QString IconPath() {
 	return QStandardPaths::writableLocation(
 		QStandardPaths::AppDataLocation) + u"/oxDesktop.ico"_q;
@@ -104,7 +105,6 @@ namespace {
 	return result;
 }
 
-#ifdef Q_OS_WIN
 void SetShortcutIcon(const QString &link, const QString &icon) {
 	if (!QFile::exists(link)) {
 		return;

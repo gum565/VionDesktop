@@ -2995,10 +2995,8 @@ void AddCategoryGrid(SectionBuilder &builder) {
 			std::vector<QImage> icons;
 		};
 		const auto state = grid->lifetime().make_state<State>();
-		for (const auto &card : *cards) {
-			state->titles.push_back(QString());
-			state->abouts.push_back(QString());
-		}
+		state->titles.resize(cards->size());
+		state->abouts.resize(cards->size());
 		for (auto i = 0; i != count; ++i) {
 			(*cards)[i].title() | rpl::on_next([=](const QString &text) {
 				state->titles[i] = text;

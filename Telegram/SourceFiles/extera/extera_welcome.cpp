@@ -43,36 +43,6 @@ enum class Step : uint8_t {
 	Changelog = 3,
 };
 
-[[nodiscard]] TextWithEntities ParseMarkdownLinks(const QString &source) {
-	auto result = TextWithEntities();
-	auto index = 0;
-	const auto length = source.size();
-	while (index < length) {
-		const auto openBracket = source.indexOf('[', index);
-		if (openBracket < 0) {
-			result.append(source.mid(index));
-			break;
-		}
-		if (openBracket > index) {
-			result.append(source.mid(index, openBracket - index));
-		}
-		const auto closeBracket = source.indexOf(']', openBracket + 1);
-		if (closeBracket > openBracket && closeBracket + 1 < length && source[closeBracket + 1] == '(') {
-			const auto closeParen = source.indexOf(')', closeBracket + 2);
-			if (closeParen > closeBracket + 1) {
-				const auto label = source.mid(openBracket + 1, closeBracket - openBracket - 1);
-				const auto url = source.mid(closeBracket + 2, closeParen - closeBracket - 2);
-				result.append(tr::link(label, url));
-				index = closeParen + 1;
-				continue;
-			}
-		}
-		result.append(source.mid(openBracket, 1));
-		index = openBracket + 1;
-	}
-	return result;
-}
-
 rpl::lifetime &Lifetime() {
 	static auto result = rpl::lifetime();
 	return result;

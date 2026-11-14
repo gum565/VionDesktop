@@ -348,8 +348,9 @@ void CleanOurProxies() {
 	auto changed = false;
 	for (const auto &p : list) {
 		if (IsOurs(p)) {
-			settings.removeFromList(p);
-			changed = true;
+			if (settings.removeFromList(p)) {
+				changed = true;
+			}
 		}
 	}
 	if (changed) {

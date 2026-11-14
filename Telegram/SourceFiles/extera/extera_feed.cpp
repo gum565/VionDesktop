@@ -233,7 +233,7 @@ void CollectChannels(
 		return ranges::contains(channels, history);
 	};
 	auto items = std::vector<not_null<HistoryItem*>>();
-	for (const auto history : channels) {
+	for (const auto &history : channels) {
 		auto added = false;
 		auto count = 0;
 		for (const auto &block : history->blocks) {
@@ -274,7 +274,7 @@ void CollectChannels(
 	}
 	auto result = std::vector<FullMsgId>();
 	result.reserve(items.size());
-	for (const auto item : items) {
+	for (const auto &item : items) {
 		result.push_back(item->fullId());
 	}
 	return result;
@@ -282,7 +282,7 @@ void CollectChannels(
 
 [[nodiscard]] int UnreadCount(not_null<Data::Session*> owner) {
 	auto result = 0;
-	for (const auto history : FeedChannels(owner)) {
+	for (const auto &history : FeedChannels(owner)) {
 		result += history->unreadCount();
 	}
 	return result;
@@ -848,7 +848,7 @@ void FeedWidget::showMenu() {
 		window->show(Ui::MakeConfirmBox({
 			.text = tr::lng_extera_feed_mark_read_sure(),
 			.confirmed = [=](Fn<void()> close) {
-				for (const auto history : FeedChannels(owner)) {
+				for (const auto &history : FeedChannels(owner)) {
 					if (history->unreadCount() > 0) {
 						owner->histories().readInbox(history);
 					}
@@ -1019,12 +1019,12 @@ public:
 
 	void prepare() override {
 		delegate()->peerListSetSearchMode(PeerListSearchMode::Enabled);
-		for (const auto history : _channels) {
+		for (const auto &history : _channels) {
 			delegate()->peerListAppendRow(
 				std::make_unique<PeerListRow>(history->peer));
 		}
 		delegate()->peerListRefreshRows();
-		for (const auto history : _channels) {
+		for (const auto &history : _channels) {
 			const auto peer = history->peer;
 			if (_selected.contains(peer->id.value)) {
 				if (const auto row = delegate()->peerListFindRow(
@@ -1061,7 +1061,7 @@ void ShowChannelsPicker(
 		box->setTitle(std::move(title));
 		box->addButton(tr::lng_settings_save(), [=] {
 			auto result = base::flat_set<uint64>();
-			for (const auto peer : box->collectSelectedRows()) {
+			for (const auto &peer : box->collectSelectedRows()) {
 				result.emplace(peer->id.value);
 			}
 			done(std::move(result));
@@ -1334,7 +1334,7 @@ void ShowFeedSettings(not_null<Window::SessionController*> controller) {
 		shownButton->setClickedCallback([=] {
 			const auto hidden = HiddenChannels();
 			auto selected = base::flat_set<uint64>();
-			for (const auto history : AllChannels(owner)) {
+			for (const auto &history : AllChannels(owner)) {
 				const auto id = history->peer->id.value;
 				if (!hidden.contains(id)) {
 					selected.emplace(id);
@@ -1345,7 +1345,7 @@ void ShowFeedSettings(not_null<Window::SessionController*> controller) {
 				tr::lng_extera_feed_shown(),
 				std::move(selected),
 				[=](base::flat_set<uint64> result) {
-					for (const auto history : AllChannels(owner)) {
+					for (const auto &history : AllChannels(owner)) {
 						SetChannelHidden(
 							history->peer,
 							!result.contains(history->peer->id.value));

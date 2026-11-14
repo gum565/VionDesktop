@@ -39,7 +39,7 @@ int ExportAll(const QString &folder);
 [[nodiscard]] bool Started();
 [[nodiscard]] QString RuntimeError();
 
-[[nodiscard]] QJsonValue Call(
+QJsonValue Call(
 	const QString &method,
 	const QJsonObject &args = QJsonObject());
 

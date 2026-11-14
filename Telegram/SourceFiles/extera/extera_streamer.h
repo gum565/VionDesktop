@@ -62,6 +62,7 @@ enum class Exception {
 
 [[nodiscard]] ChatType TypeOf(not_null<PeerData*> peer);
 [[nodiscard]] ChatHide ForPeer(not_null<PeerData*> peer);
+[[nodiscard]] ChatHide HideFor(ChatType type);
 [[nodiscard]] Exception ExceptionFor(not_null<PeerData*> peer);
 void SetException(not_null<PeerData*> peer, Exception exception);
 
