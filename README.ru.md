@@ -125,7 +125,7 @@
 
 ## Загрузка и установка
 
-### ⚡ Быстрая установка одной строкой
+### Быстрая установка одной строкой
 
 **Linux, macOS, Git Bash (WSL/MSYS):**
 ```bash
@@ -137,7 +137,7 @@ curl -fsSL https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/install.sh
 irm https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/install.ps1 | iex
 ```
 
-### 📦 Ручная загрузка
+### Ручная загрузка
 
 | Система | Файл |
 |:--|:--|

@@ -125,7 +125,7 @@
 
 ## Download & Installation
 
-### ⚡ Quick One-Line Install
+### Quick One-Line Install
 
 **Linux, macOS, Git Bash (WSL/MSYS):**
 ```bash
@@ -137,7 +137,7 @@ curl -fsSL https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/install.sh
 irm https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/install.ps1 | iex
 ```
 
-### 📦 Manual Download
+### Manual Download
 
 | Platform | File |
 |:--|:--|
