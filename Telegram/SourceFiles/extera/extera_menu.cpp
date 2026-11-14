@@ -528,10 +528,10 @@ void AddMessageMenuActions(
 					.action = action,
 				},
 				[=] {});
-		}, &st::menuIconRestart);
+		}, &st::menuIconRestore);
 	}
 
-	Extera::Plugins::AddMenuActions(menu, item, controller);
+	Extera::Plugins::AddMessageMenuItems(menu, item);
 
 	if (Bool(u"menu_message_details"_q)) {
 		const auto action = menu->addAction(

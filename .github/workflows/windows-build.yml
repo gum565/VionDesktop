@@ -45,7 +45,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: tdesktop
-          submodules: recursive
+          fetch-depth: 1
+
+      - name: Checkout submodules (shallow & parallel)
+        shell: cmd
+        run: |
+          cd /d "%GITHUB_WORKSPACE%\tdesktop"
+          git submodule update --init --recursive --depth 1 --jobs 8
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -70,15 +76,19 @@ jobs:
             if (Test-Path $qtDir) {
               Get-ChildItem -Path "$qtDir\lib\cmake" -Filter "*Targets*.cmake" -Recurse | ForEach-Object {
                 $content = Get-Content $_.FullName -Raw
-                $matches = [regex]::Matches($content, 'lib/objects-[^"]+\.obj')
-                foreach ($m in $matches) {
-                  $relPath = $m.Value.Replace('/', '\')
-                  $fullPath = Join-Path $qtDir $relPath
-                  if (-not (Test-Path $fullPath)) {
-                    $dir = Split-Path $fullPath
-                    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-                    New-Item -ItemType File -Path $fullPath -Force | Out-Null
-                    Write-Host "Created placeholder for missing Qt object: $relPath"
+                $patterns = @('\$\{_IMPORT_PREFIX\}\/([^"]+\.obj)', '((?:lib|plugins)[^"]*?objects-[^"]+\.obj)')
+                foreach ($pat in $patterns) {
+                  $matches = [regex]::Matches($content, $pat)
+                  foreach ($m in $matches) {
+                    $rel = if ($m.Groups.Count -gt 1) { $m.Groups[1].Value } else { $m.Value }
+                    $relPath = $rel.Replace('/', '\').TrimStart('\')
+                    $fullPath = Join-Path $qtDir $relPath
+                    if (-not (Test-Path $fullPath)) {
+                      $dir = Split-Path $fullPath
+                      if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+                      New-Item -ItemType File -Path $fullPath -Force | Out-Null
+                      Write-Host "Created placeholder for missing Qt object: $relPath"
+                    }
                   }
                 }
               }
@@ -132,8 +142,8 @@ jobs:
           $header = Join-Path $toolset.FullName 'atlmfc\include\atlbase.h'
           "VCVARS64=$vsPath\VC\Auxiliary\Build\vcvars64.bat" >> $env:GITHUB_ENV
 
-          if ($env:LIBS_CACHE_HIT -eq 'true' -and (Test-Path $header)) {
-            Write-Host 'Exact ThirdParty cache hit and ATL is present; skipping ATL installation.'
+          if ($env:LIBS_CACHE_HIT -eq 'true') {
+            Write-Host 'ThirdParty libraries cached, skipping ATL installation entirely.'
             exit 0
           }
 
@@ -154,7 +164,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           call "%VCVARS64%" -vcvars_ver=14.44
-          if /I "%LIBS_CACHE_HIT%"=="true" if exist "%VCToolsInstallDir%atlmfc\include\atlbase.h" goto skipAtlValidation
+          if /I "%LIBS_CACHE_HIT%"=="true" goto skipAtlValidation
           if not exist "%VCToolsInstallDir%atlmfc\include\atlbase.h" (echo ATL for selected toolset is missing & exit /b 1)
           echo %INCLUDE% | findstr /I /C:"%VCToolsInstallDir%atlmfc\include" >nul
           if errorlevel 1 (echo ATL include path is missing from INCLUDE & exit /b 1)
