@@ -414,11 +414,11 @@ void FillDetails(
 		&st::menuIconSchedule,
 		tr::lng_extera_details_date(tr::now),
 		FormatFullDate(item->date()));
-	if (item->isEdited()) {
+	if (const auto edited = item->Get<HistoryMessageEdited>()) {
 		add(
 			&st::menuIconEdit,
 			tr::lng_extera_details_edited(tr::now),
-			QString::fromUtf8("Yes"));
+			edited->date ? FormatFullDate(edited->date) : QString::fromUtf8("Yes"));
 	}
 	if (const auto fwd = item->Get<HistoryMessageForwarded>()) {
 		const auto senderName = fwd->originalSender
@@ -500,7 +500,7 @@ void AddMessageMenuActions(
 				const auto song = document->song();
 				const auto artist = song ? song->performer : QString();
 				const auto title = song ? song->title : QString();
-				const auto duration = document->getDuration();
+				const auto duration = int(document->duration() / crl::time(1000));
 				menu->addAction(tr::lng_extera_player_lyrics(tr::now), [=] {
 					Extera::Lyrics::ShowBox(controller, artist, title, duration);
 				}, &st::menuIconSoundSelect);
