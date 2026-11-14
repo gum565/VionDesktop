@@ -1230,9 +1230,12 @@ void RowPainter::Paint(
 	const auto thread = row->thread();
 	const auto sublist = row->sublist();
 	const auto peer = history ? history->peer.get() : nullptr;
+	const auto isFolder = (entry->asFolder() != nullptr);
 	const auto streamer = peer
 		? Extera::Streamer::ForPeer(peer)
-		: Extera::Streamer::ChatHide();
+		: (isFolder && Extera::Streamer::Active()
+			? Extera::Streamer::HideFor(Extera::Streamer::ChatType::Group)
+			: Extera::Streamer::ChatHide());
 	if (streamer.all()) {
 		PaintStreamerRow(p, row->height(), context);
 		return;
@@ -1355,6 +1358,8 @@ void RowPainter::Paint(
 			view->paint(p, rect, context);
 		}
 	};
+	static auto emptyBadge = PeerBadge();
+	static auto emptyRepaint = Fn<void()>([] {});
 	PaintRow(
 		p,
 		row,
@@ -1362,8 +1367,8 @@ void RowPainter::Paint(
 		entry,
 		videoUserpic,
 		from,
-		entry->chatListPeerBadge(),
-		[=] { entry->updateChatListEntry(); },
+		streamer.name ? emptyBadge : entry->chatListPeerBadge(),
+		streamer.name ? emptyRepaint : [=] { entry->updateChatListEntry(); },
 		entry->chatListNameText(),
 		nullptr,
 		item,
@@ -1474,6 +1479,15 @@ void RowPainter::Paint(
 	const auto flags = (showSavedMessages ? Flag::SavedMessages : Flag(0))
 		| (showRepliesMessages ? Flag::RepliesMessages : Flag(0))
 		| (showVerifyCodes ? Flag::VerifyCodes : Flag(0));
+	const auto streamer = peer
+		? Extera::Streamer::ForPeer(peer)
+		: Extera::Streamer::ChatHide();
+	if (streamer.all()) {
+		PaintStreamerRow(p, context.st->height, context);
+		return;
+	}
+	static auto emptyFakeBadge = PeerBadge();
+	static auto emptyFakeRepaint = Fn<void()>([] {});
 	PaintRow(
 		p,
 		row,
@@ -1481,8 +1495,8 @@ void RowPainter::Paint(
 		entry,
 		nullptr,
 		from,
-		row->badge(),
-		row->repaint(),
+		streamer.name ? emptyFakeBadge : row->badge(),
+		streamer.name ? emptyFakeRepaint : row->repaint(),
 		row->name(),
 		hiddenSenderInfo,
 		item,
@@ -1493,6 +1507,13 @@ void RowPainter::Paint(
 		badgesState,
 		flags,
 		paintItemCallback);
+	if (streamer.avatar || streamer.name) {
+		PaintStreamerOverlay(
+			p,
+			context,
+			streamer.avatar,
+			streamer.name);
+	}
 }
 
 QRect RowPainter::SendActionAnimationRect(

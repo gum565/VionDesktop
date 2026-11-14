@@ -2364,13 +2364,15 @@ void HistoryWidget::updateExdMathGhost() {
 	inner->setProperty("exd_text", *value);
 	const auto edit = _field->rawTextEdit();
 	const auto metrics = QFontMetrics(edit->font());
-	const auto cursor = edit->cursorRect();
+	auto endCursor = edit->textCursor();
+	endCursor.movePosition(QTextCursor::End);
+	const auto rect = edit->cursorRect(endCursor);
 	const auto point = edit->viewport()->mapTo(
 		_field.data(),
-		cursor.topRight());
+		rect.topRight());
 	inner->resize(
 		metrics.horizontalAdvance(*value) + style::ConvertScale(2),
-		cursor.height());
+		rect.height());
 	_exdMathGhost->resize(inner->size());
 	_exdMathGhost->move(point.x() + style::ConvertScale(2), point.y());
 	inner->update();

@@ -74,6 +74,14 @@ jobs:
             Remove-Item $archive -Force
             $qtDir = Join-Path $env:GITHUB_WORKSPACE 'Libraries\win64\Qt-6.11.2'
             if (Test-Path $qtDir) {
+              $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+              $cl = Get-ChildItem "$vsPath\VC\Tools\MSVC" -Filter "cl.exe" -Recurse | Where-Object { $_.FullName -like "*HostX64\x64\cl.exe" } | Select-Object -First 1
+              $dummyC = Join-Path $env:TEMP "dummy_qt_stub.c"
+              Set-Content -Path $dummyC -Value "static int __dummy_qt_obj_stub = 0;"
+              $dummyObj = Join-Path $env:TEMP "dummy_qt_stub.obj"
+              if ($cl) {
+                & $cl.FullName /c /nologo /Fo$dummyObj $dummyC | Out-Null
+              }
               Get-ChildItem -Path "$qtDir\lib\cmake" -Filter "*Targets*.cmake" -Recurse | ForEach-Object {
                 $content = Get-Content $_.FullName -Raw
                 $patterns = @('\$\{_IMPORT_PREFIX\}\/([^"]+\.obj)', '((?:lib|plugins)[^"]*?objects-[^"]+\.obj)')
@@ -86,8 +94,12 @@ jobs:
                     if (-not (Test-Path $fullPath)) {
                       $dir = Split-Path $fullPath
                       if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-                      New-Item -ItemType File -Path $fullPath -Force | Out-Null
-                      Write-Host "Created placeholder for missing Qt object: $relPath"
+                      if (Test-Path $dummyObj) {
+                        Copy-Item -Path $dummyObj -Destination $fullPath -Force | Out-Null
+                      } else {
+                        New-Item -ItemType File -Path $fullPath -Force | Out-Null
+                      }
+                      Write-Host "Created valid COFF stub for missing Qt object: $relPath"
                     }
                   }
                 }

@@ -451,7 +451,7 @@ bool ChatFilter::contains(
 		| Flag::Bots;
 	const auto matchesType = (_flags & typesMask)
 		? bool(_flags & flag)
-		: (history->peer->isChat() || history->peer->isChannel());
+		: false;
 	if (!matchesType) {
 		return _always.contains(history);
 	}
@@ -473,7 +473,8 @@ bool ChatFilter::contains(
 		}
 	}
 	return false
-		|| ((!(_flags & Flag::NoMuted)
+		|| ((_flags & flag)
+			&& (!(_flags & Flag::NoMuted)
 				|| !history->muted()
 				|| (state.mention
 					&& history->folderKnown()

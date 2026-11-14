@@ -480,7 +480,7 @@ IdMode Id() {
 ChatType TypeOf(not_null<PeerData*> peer) {
 	if (const auto user = peer->asUser()) {
 		return user->isBot() ? ChatType::Bot : ChatType::Private;
-	} else if (peer->isBroadcast()) {
+	} else if (peer->isBroadcast() || peer->isChannel()) {
 		return ChatType::Channel;
 	}
 	return ChatType::Group;

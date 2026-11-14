@@ -532,6 +532,10 @@ const QString &Reactions::myTagTitle(const ReactionId &id) const {
 }
 
 ReactionId Reactions::favoriteId() const {
+	const auto &extras = _owner->session().settings().extraFavoriteReactions();
+	if (!extras.empty()) {
+		return extras.front();
+	}
 	return _favoriteId;
 }
 

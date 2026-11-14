@@ -1320,6 +1320,20 @@ void RegisterSettingsHandlers(Router &router) {
 		.action = AliasTo{ u"settings"_q, u"data/proxy"_q },
 	});
 	router.add(u"settings"_q, {
+		.path = u"ws_proxy"_q,
+		.action = CodeBlock{ [](const Context &ctx) {
+			if (!ctx.controller) {
+				return Result::NeedsAuth;
+			}
+			ProxiesBoxController::Show(ctx.controller, u"ws_proxy"_q);
+			return Result::Handled;
+		}},
+	});
+	router.add(u"ws_proxy"_q, {
+		.path = QString(),
+		.action = AliasTo{ u"settings"_q, u"ws_proxy"_q },
+	});
+	router.add(u"settings"_q, {
 		.path = u"proxies"_q,
 		.action = AliasTo{ u"settings"_q, u"data/proxy"_q },
 	});

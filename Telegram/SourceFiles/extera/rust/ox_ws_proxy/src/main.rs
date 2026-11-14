@@ -395,7 +395,15 @@ async fn handle_client(
     // Fallback to Cloudflare workers if direct fails
     if ws_stream.is_none() {
         for cf_domain in cf_domains.iter() {
-            let cf_url = format!("wss://kws{}.{}/apiws", actual_dc, cf_domain);
+            let ip = match actual_dc {
+                1 => "149.154.175.50",
+                2 => "149.154.167.51",
+                3 => "149.154.175.100",
+                4 => "149.154.167.91",
+                5 => "149.154.171.5",
+                _ => "149.154.167.51",
+            };
+            let cf_url = format!("wss://{}/apiws?dst={}&dc={}", cf_domain, ip, actual_dc);
             match tokio::time::timeout(
                 Duration::from_secs(5),
                 tokio_tungstenite::connect_async(&cf_url),

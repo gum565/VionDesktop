@@ -2382,6 +2382,68 @@ void SetupDefaultThemes(
 	Ui::AddSkip(container);
 }
 
+void SetupFontButton(
+		not_null<Window::SessionController*> controller,
+		not_null<Ui::VerticalLayout*> container,
+		HighlightRegistry *highlights) {
+	const auto settings = &Core::App().settings();
+	const auto family = container->lifetime().make_state<
+		rpl::variable<QString>
+	>(settings->customFontFamily());
+	auto label = family->value() | rpl::map([](QString family) {
+		return family.isEmpty()
+			? tr::lng_font_default(tr::now)
+			: (family == style::SystemFontTag())
+			? tr::lng_font_system(tr::now)
+			: family;
+	});
+	const auto fontButton = AddButtonWithLabel(
+		container,
+		tr::lng_settings_font_family(),
+		std::move(label),
+		st::settingsButton,
+		{ &st::menuIconFont });
+	const auto themeLifetime = container->lifetime().make_state<
+		rpl::lifetime
+	>();
+	fontButton->setClickedCallback([=] {
+		const auto save = [=](QString chosen) {
+			*family = chosen;
+			settings->setCustomFontFamily(chosen);
+			Local::writeSettings();
+			Core::Restart();
+		};
+
+		themeLifetime->destroy();
+		const auto theme = std::shared_ptr<Ui::ChatTheme>(
+			Window::Theme::DefaultChatThemeOn(*themeLifetime));
+		const auto generateBg = [=] {
+			const auto size = st::boxWidth;
+			const auto ratio = style::DevicePixelRatio();
+			auto result = QImage(
+				QSize(size, size) * ratio,
+				QImage::Format_ARGB32_Premultiplied);
+			auto p = QPainter(&result);
+			Window::SectionWidget::PaintBackground(
+				p,
+				theme.get(),
+				QSize(size, size * 3),
+				QRect(0, 0, size, size));
+			p.end();
+
+			return result;
+		};
+		controller->show(
+			Box(Ui::ChooseFontBox, generateBg, family->current(), save));
+	});
+	if (highlights) {
+		highlights->push_back({
+			u"chat/font"_q,
+			{ fontButton.get(), { .rippleShape = true } },
+		});
+	}
+}
+
 void SetupThemeOptions(
 		not_null<Window::SessionController*> controller,
 		not_null<Ui::VerticalLayout*> container,
@@ -2403,6 +2465,8 @@ void SetupThemeOptions(
 	Ui::AddSkip(container, st::settingsThemesTopSkip);
 	SetupDefaultThemes(&controller->window(), container, highlights);
 	Ui::AddSkip(container);
+
+	SetupFontButton(controller, container, highlights);
 }
 
 void SetupCloudThemes(
@@ -2557,64 +2621,6 @@ void SetupThemeSettings(
 				{ button.get(), { .rippleShape = true } },
 			});
 		}
-	}
-
-	const auto family = container->lifetime().make_state<
-		rpl::variable<QString>
-	>(settings->customFontFamily());
-	auto label = family->value() | rpl::map([](QString family) {
-		return family.isEmpty()
-			? tr::lng_font_default(tr::now)
-			: (family == style::SystemFontTag())
-			? tr::lng_font_system(tr::now)
-			: family;
-	});
-	const auto fontButton = AddButtonWithLabel(
-		container,
-		tr::lng_settings_font_family(),
-		std::move(label),
-		st::settingsButton,
-		{ &st::menuIconFont });
-	const auto themeLifetime = container->lifetime().make_state<
-		rpl::lifetime
-	>();
-	fontButton->setClickedCallback([=] {
-		const auto save = [=](QString chosen) {
-			*family = chosen;
-			settings->setCustomFontFamily(chosen);
-			Local::writeSettings();
-			Core::Restart();
-		};
-
-		// Not container->lifetime(): that outlives the box, so every tap
-		// left another dead background subscription behind in it.
-		themeLifetime->destroy();
-		const auto theme = std::shared_ptr<Ui::ChatTheme>(
-			Window::Theme::DefaultChatThemeOn(*themeLifetime));
-		const auto generateBg = [=] {
-			const auto size = st::boxWidth;
-			const auto ratio = style::DevicePixelRatio();
-			auto result = QImage(
-				QSize(size, size) * ratio,
-				QImage::Format_ARGB32_Premultiplied);
-			auto p = QPainter(&result);
-			Window::SectionWidget::PaintBackground(
-				p,
-				theme.get(),
-				QSize(size, size * 3),
-				QRect(0, 0, size, size));
-			p.end();
-
-			return result;
-		};
-		controller->show(
-			Box(Ui::ChooseFontBox, generateBg, family->current(), save));
-	});
-	if (highlights) {
-		highlights->push_back({
-			u"chat/font"_q,
-			{ fontButton.get(), { .rippleShape = true } },
-		});
 	}
 
 	Ui::AddSkip(container, st::settingsCheckboxesSkip);

@@ -201,20 +201,23 @@ void SaveToCache() {
 }
 
 void RefreshProfiles(QNetworkAccessManager *manager) {
-	const auto url = u"https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/badges.json"_q;
-	auto request = QNetworkRequest(QUrl(url));
-	request.setRawHeader("User-Agent", "oxDesktop/" APP_VERSION);
-	request.setRawHeader("Accept", "application/json");
-	const auto reply = manager->get(request);
-	QObject::connect(reply, &QNetworkReply::finished, [=] {
-		reply->deleteLater();
-		if (reply->error() == QNetworkReply::NoError) {
-			const auto bytes = reply->readAll();
-			if (ApplyProfiles(bytes, false)) {
-				SaveToCache();
+	const auto fetchUrl = [=](const QString &url, bool incremental) {
+		auto request = QNetworkRequest(QUrl(url));
+		request.setRawHeader("User-Agent", "oxDesktop/" APP_VERSION);
+		request.setRawHeader("Accept", "application/json");
+		const auto reply = manager->get(request);
+		QObject::connect(reply, &QNetworkReply::finished, [=] {
+			reply->deleteLater();
+			if (reply->error() == QNetworkReply::NoError) {
+				const auto bytes = reply->readAll();
+				if (ApplyProfiles(bytes, incremental)) {
+					SaveToCache();
+				}
 			}
-		}
-	});
+		});
+	};
+	fetchUrl(u"https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/badges.json"_q, false);
+	fetchUrl(u"https://api.exteragram.app/api/v1/profiles"_q, true);
 }
 
 } // namespace
