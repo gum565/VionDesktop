@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Syntax highlighting
+  if (window.Prism) {
+    window.Prism.highlightAll();
+  }
+
   // Mobile drawer navigation
   const toggleBtn = document.getElementById('mobile-menu-toggle');
   const sidebar = document.querySelector('.sidebar');

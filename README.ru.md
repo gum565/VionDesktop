@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/nanodevmc/oxDesktop/releases/latest"><img src="https://img.shields.io/github/v/release/nanodevmc/oxDesktop?label=Версия&color=da3018" alt="Версия"></a>
-  <a href="https://github.com/nanodevmc/oxDesktop/releases"><img src="https://img.shields.io/github/downloads/nanodevmc/oxDesktop/total?label=Загрузки&color=da3018" alt="Загрузки"></a>
+  <a href="https://github.com/nanodevmc/oxDesktop/releases"><img src="https://img.shields.io/github/v/release/nanodevmc/oxDesktop?filter=!ci-cache*&include_prereleases&label=Версия&color=da3018" alt="Версия"></a>
+  <a href="https://github.com/nanodevmc/oxDesktop/releases"><img src="https://img.shields.io/github/downloads/nanodevmc/oxDesktop/latest/total?label=Загрузки&color=da3018" alt="Загрузки"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Лицензия-GPL--3.0-da3018" alt="Лицензия"></a>
   <br>
   <a href="https://t.me/oxDesktop"><img src="https://img.shields.io/badge/Telegram-@oxDesktop-da3018?logo=telegram&logoColor=white" alt="Telegram"></a>

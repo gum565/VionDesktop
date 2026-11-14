@@ -15,29 +15,45 @@ param(
 $ErrorActionPreference = 'Stop'
 $null = $input
 
+try {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    $OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {
+}
+
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
 
 $isRu = [System.Globalization.CultureInfo]::CurrentUICulture.Name.StartsWith("ru")
-$e = [char]27
 
 function Write-Step($ruText, $enText) {
     if (-not $Quiet) {
         $msg = if ($isRu) { $ruText } else { $enText }
-        Write-Host "  $e[32m✔$e[0m $msg"
+        Write-Host "  √ " -ForegroundColor Green -NoNewline
+        Write-Host $msg
     }
 }
 
 function Write-Title($ruText, $enText) {
     if (-not $Quiet) {
         $msg = if ($isRu) { $ruText } else { $enText }
-        Write-Host "$e[38;2;224;58;27m✦$e[0m $e[1m$msg$e[0m"
+        Write-Host "* " -ForegroundColor Cyan -NoNewline
+        Write-Host $msg -ForegroundColor White
     }
 }
 
 function Write-Warn($ruText, $enText) {
     if (-not $Quiet) {
         $msg = if ($isRu) { $ruText } else { $enText }
-        Write-Host "  $e[33m⚠$e[0m $msg"
+        Write-Host "  ! " -ForegroundColor Yellow -NoNewline
+        Write-Host $msg
+    }
+}
+
+function Write-Err($ruText, $enText) {
+    if (-not $Quiet) {
+        $msg = if ($isRu) { $ruText } else { $enText }
+        Write-Host "  × " -ForegroundColor Red -NoNewline
+        Write-Host $msg
     }
 }
 
@@ -52,23 +68,27 @@ Write-Step "Поиск последнего релиза на GitHub..." "Checki
 $release = $null
 
 try {
-    $apiUrl = "https://api.github.com/repos/$repo/releases/latest"
-    $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
-} catch {
-    # Fallback to general releases list (in case release is tagged as pre-release)
-    try {
-        $allReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases?per_page=10" -Headers $headers -ErrorAction Stop
-        foreach ($r in $allReleases) {
-            if ($r.assets -and ($r.assets | Where-Object { $_.name -match "(installer|setup|portable|windows)" })) {
+    $apiUrl = "https://api.github.com/repos/$repo/releases?per_page=10"
+    $releases = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
+    foreach ($r in $releases) {
+        if ($r.tag_name -ne "ci-cache" -and $r.assets -and ($r.assets | Where-Object { $_.name -match "(installer|setup|portable|windows)" })) {
+            $release = $r
+            break
+        }
+    }
+    if (-not $release -and $releases) {
+        foreach ($r in $releases) {
+            if ($r.tag_name -ne "ci-cache") {
                 $release = $r
                 break
             }
         }
-        if (-not $release -and $allReleases -and $allReleases.Count -gt 0) {
-            $release = $allReleases[0]
-        }
+    }
+} catch {
+    try {
+        $apiUrl = "https://api.github.com/repos/$repo/releases/latest"
+        $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
     } catch {
-        # Network or rate-limit fallback
     }
 }
 

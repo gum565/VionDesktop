@@ -196,10 +196,10 @@ body::before {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 85;
+  z-index: 90;
   opacity: 0;
   transition: opacity 0.25s ease;
   pointer-events: none;
@@ -216,7 +216,6 @@ body::before {
   margin-top: var(--header-h);
   min-height: calc(100vh - var(--header-h));
   position: relative;
-  z-index: 1;
 }
 
 .sidebar {
@@ -452,6 +451,75 @@ pre code {
   display: block;
 }
 
+/* Prism Syntax Highlighting (OneDark / Obsidian palette) */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #636d83;
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: #abb2bf;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #d19a66;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #98c379;
+}
+
+.token.operator,
+.token.entity,
+.token.url {
+  color: #56b6c2;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #c678dd;
+  font-weight: 500;
+}
+
+.token.function,
+.token.class-name {
+  color: #61afef;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #e5c07b;
+}
+
+.token.decorator,
+.token.annotation {
+  color: #e5c07b;
+}
+
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
 .glass-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -540,15 +608,14 @@ tr:hover td {
     bottom: 0;
     left: 0;
     width: min(84vw, 320px);
-    background: rgba(10, 11, 15, 0.98);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: #0d0e14;
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 90;
-    box-shadow: 12px 0 35px rgba(0, 0, 0, 0.7);
+    z-index: 95;
+    box-shadow: 12px 0 35px rgba(0, 0, 0, 0.75);
     border-right: 1px solid var(--border-medium);
     padding: 20px 16px 40px 16px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .sidebar.open {
@@ -563,9 +630,12 @@ tr:hover td {
   }
 
   .sidebar-links li a {
-    padding: 10px 12px;
-    font-size: 14.5px;
+    padding: 12px 14px;
+    font-size: 15px;
     border-radius: 8px;
+    display: block;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   .content-area {
