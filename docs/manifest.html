@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#09090b">
   <title>Манифест manifest.json | ExteraGram SDK</title>
@@ -24,7 +24,13 @@
       <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
       <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
     </nav>
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Меню">
+      <svg class="icon-menu" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+      <svg class="icon-close" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+    </button>
   </header>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <div class="layout-container">
     <aside class="sidebar">
@@ -55,6 +61,14 @@
           <li><a href="publishing.html">Верификация и публикация</a></li>
         </ul>
       </div>
+
+      <div class="sidebar-group mobile-only-group">
+        <div class="sidebar-title">Ресурсы</div>
+        <ul class="sidebar-links">
+          <li><a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub Репозиторий ↗</a></li>
+          <li><a href="https://t.me/oxDesktop" target="_blank">Telegram Канал ↗</a></li>
+        </ul>
+      </div>
     </aside>
 
     <main class="content-area">
@@ -72,30 +86,20 @@
   "id": "ox_translator",
   "name": "oxTranslator Pro",
   "version": "1.2.0",
-  "author": "@nanodevmc",
+  "author": "@oxDesktop",
   "description": "Автоматический мгновенный перевод сообщений в чатах и каналах.",
   "main": "main.py",
-  "min_app_version": "7.4.3",
+  "icon": "icon.png",
+  "min_version": "7.4.3",
   "permissions": [
-    "messages",
-    "network",
-    "ui"
-  ],
-  "settings": {
-    "target_language": {
-      "type": "string",
-      "default": "ru",
-      "title": "Целевой язык"
-    },
-    "auto_translate": {
-      "type": "boolean",
-      "default": true,
-      "title": "Автоматический перевод"
-    }
-  }
+    "ui",
+    "messages.read",
+    "messages.send",
+    "network"
+  ]
 }</code></pre>
 
-      <h2>Таблица полей</h2>
+      <h2>Таблица полей манифеста</h2>
       <table>
         <thead>
           <tr>
@@ -110,13 +114,13 @@
             <td><code>id</code></td>
             <td>string</td>
             <td>Да</td>
-            <td>Уникальный латинский идентификатор (a-z, 0-9, _) без пробелов.</td>
+            <td>Уникальный строковый идентификатор. Допустимы буквы, цифры, дефис и подчеркивание (2-32 символа).</td>
           </tr>
           <tr>
             <td><code>name</code></td>
             <td>string</td>
             <td>Да</td>
-            <td>Отображаемое человекочитаемое имя плагина.</td>
+            <td>Человекочитаемое название плагина для отображения в настройках клиента.</td>
           </tr>
           <tr>
             <td><code>version</code></td>
@@ -127,40 +131,45 @@
           <tr>
             <td><code>author</code></td>
             <td>string</td>
-            <td>Да</td>
-            <td>Имя или Telegram-юзернейм разработчика.</td>
+            <td>Нет</td>
+            <td>Никнейм или контакты создателя.</td>
+          </tr>
+          <tr>
+            <td><code>description</code></td>
+            <td>string</td>
+            <td>Нет</td>
+            <td>Краткое описание возможностей расширения.</td>
           </tr>
           <tr>
             <td><code>main</code></td>
             <td>string</td>
             <td>Да</td>
-            <td>Относительный путь к точке входа (обычно <code>main.py</code>).</td>
+            <td>Имя главного исполняемого Python-файла (обычно <code>main.py</code>).</td>
+          </tr>
+          <tr>
+            <td><code>icon</code></td>
+            <td>string</td>
+            <td>Нет</td>
+            <td>Относительный путь к иконке плагина (PNG/SVG, рекомендован размер 64x64).</td>
           </tr>
           <tr>
             <td><code>permissions</code></td>
             <td>array</td>
-            <td>Нет</td>
-            <td>Список запрашиваемых разрешений безопасности.</td>
-          </tr>
-          <tr>
-            <td><code>settings</code></td>
-            <td>object</td>
-            <td>Нет</td>
-            <td>Схема настраиваемых параметров, автоматически отображаемая в UI менеджера.</td>
+            <td>Да</td>
+            <td>Массив ключей доступа, требуемых плагину для работы.</td>
           </tr>
         </tbody>
       </table>
 
-      <h2>Разрешения безопасности (Permissions)</h2>
-      <div class="glass-card alert-warn">
-        <strong>Принцип наименьших привилегий:</strong> Запрашивайте только те разрешения, которые реально требуются для логики плагина. Клиент отображает список прав пользователю при установке.
-      </div>
-
+      <h2>Система разрешений (Permissions)</h2>
+      <p>Для обеспечения приватности пользователей доступ к подсистемам клиента строго разграничен:</p>
       <ul>
-        <li><code>messages</code> — чтение, отправка, редактирование и удаление сообщений в чатах.</li>
-        <li><code>ui</code> — показ всплывающих подсказок (Toast), диалоговых окон, добавление кнопок в меню.</li>
-        <li><code>network</code> — разрешение на исходящие HTTP/HTTPS сетевые запросы во внешние сервисы.</li>
-        <li><code>filesystem</code> — доступ на запись во временную изолированную директорию плагина.</li>
+        <li><code>ui</code> — отображение Toast-уведомлений, баннеров и добавление кнопок в настройки.</li>
+        <li><code>messages.read</code> — перехват и чтение входящих сообщений в чатах.</li>
+        <li><code>messages.send</code> — перехват исходящих сообщений, отправка автоматических ответов и модификация текста.</li>
+        <li><code>network</code> — выполнение внешних HTTP-запросов через модуль <code>urllib</code> или `requests`.</li>
+        <li><code>files</code> — чтение и запись локальных файлов во внутреннее хранилище плагина.</li>
+        <li><code>hooks</code> — подписка на системные события жизненного цикла клиента.</li>
       </ul>
     </main>
   </div>

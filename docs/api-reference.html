@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#09090b">
   <title>API Reference: client_utils | ExteraGram SDK</title>
@@ -24,7 +24,13 @@
       <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
       <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
     </nav>
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Меню">
+      <svg class="icon-menu" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+      <svg class="icon-close" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+    </button>
   </header>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <div class="layout-container">
     <aside class="sidebar">
@@ -55,53 +61,56 @@
           <li><a href="publishing.html">Верификация и публикация</a></li>
         </ul>
       </div>
+
+      <div class="sidebar-group mobile-only-group">
+        <div class="sidebar-title">Ресурсы</div>
+        <ul class="sidebar-links">
+          <li><a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub Репозиторий ↗</a></li>
+          <li><a href="https://t.me/oxDesktop" target="_blank">Telegram Канал ↗</a></li>
+        </ul>
+      </div>
     </aside>
 
     <main class="content-area">
-      <h1>Python SDK: модуль <code>client_utils</code></h1>
+      <h1>API Справочник: модуль client_utils</h1>
       <p class="lead">
-        Модуль <code>client_utils</code> встроен непосредственно в рантайм клиента. Он предоставляет высокоуровневый идиоматический Python API для работы с чатами, пользователями, сообщениями и интерфейсом.
+        Модуль <code>client_utils</code> является основным мостом взаимодействия расширений с клиентом. Он автоматически импортируется в окружение каждого плагина.
       </p>
 
-      <h2>Информационные методы</h2>
+      <h2>Уведомления и интерфейс</h2>
 
-      <h3><code>client_utils.get_app_version() -> str</code></h3>
-      <p>Возвращает текущую версию клиента oxDesktop (например, <code>"7.4.3"</code> или <code>"7.4.3.3"</code>).</p>
+      <h3><code>client_utils.show_toast(text: str) -&gt; None</code></h3>
+      <p>Отображает всплывающее системное уведомление (Toast) в нижней части активного окна клиента.</p>
+      <pre><code class="language-python">client_utils.show_toast("Настройки успешно сохранены!")</code></pre>
 
-      <h3><code>client_utils.get_app_version_full() -> str</code></h3>
-      <p>Возвращает полное имя сборки с номером суб-версии (например, <code>"7.4.3.3"</code>).</p>
+      <h3><code>client_utils.get_version() -&gt; str</code></h3>
+      <p>Возвращает текущую версию клиента (например, <code>"7.4.3.3"</code>).</p>
+      <pre><code class="language-python">current_ver = client_utils.get_version()
+print(f"Версия приложения: {current_ver}")</code></pre>
 
-      <h2>Управление сообщениями</h2>
+      <h2>Отправка и обработка сообщений</h2>
 
-      <h3><code>client_utils.send_message(peer_id: int, text: str, reply_to: int = 0)</code></h3>
-      <p>Отправляет текстовое сообщение в указанный диалог или чат.</p>
-      <pre><code class="language-python"># Пример отправки сообщения
+      <h3><code>client_utils.send_message(peer_id: int, text: str, reply_to: int = 0) -&gt; bool</code></h3>
+      <p>Отправляет текстовое сообщение в указанный чат или канал от имени текущего аккаунта.</p>
+      <pre><code class="language-python"># Отправка приветствия в диалог с пользователем
 client_utils.send_message(peer_id=12345678, text="Привет из плагина!")</code></pre>
 
-      <h3><code>client_utils.edit_message(peer_id: int, msg_id: int, text: str)</code></h3>
-      <p>Редактирует текст ранее отправленного сообщения.</p>
+      <h3><code>client_utils.get_active_chat() -&gt; Optional[dict]</code></h3>
+      <p>Возвращает словарь с метаданными текущего открытого диалога (ID, тип чата, название, права) либо <code>None</code>, если чат не открыт.</p>
+      <pre><code class="language-python">chat = client_utils.get_active_chat()
+if chat:
+    print(f"Активен чат: {chat.get('title')} (ID: {chat.get('id')})")</code></pre>
 
-      <h3><code>client_utils.delete_message(peer_id: int, msg_id: int)</code></h3>
-      <p>Удаляет сообщение по его идентификатору.</p>
+      <h2>Конфигурация и хранилище плагина</h2>
 
-      <h2>Пользовательский интерфейс (UI)</h2>
+      <h3><code>client_utils.get_setting(key: str, default: Any = None) -&gt; Any</code></h3>
+      <p>Извлекает сохраненное значение настройки из изолированного JSON-хранилища текущего плагина.</p>
 
-      <h3><code>client_utils.show_toast(text: str, duration_ms: int = 3000)</code></h3>
-      <p>Отображает нативное всплывающее уведомление (Toast) в нижней части экрана клиента.</p>
-      <pre><code class="language-python">client_utils.show_toast("Настройки сохранены!", duration_ms=2500)</code></pre>
-
-      <h3><code>client_utils.show_popup(title: str, text: str)</code></h3>
-      <p>Отображает диалоговое модальное окно с кнопкой закрытия.</p>
-
-      <h2>Регистрация команд</h2>
-
-      <h3><code>client_utils.register_command(command: str, callback: callable)</code></h3>
-      <p>Регистрирует команду в строке ввода сообщений, начинающуюся с символа <code>.</code> или <code>!</code>.</p>
-      <pre><code class="language-python">def handle_shrug(ctx):
-    # Заменяет .shrug на эмодзи
-    client_utils.send_message(ctx["peer_id"], r"¯\_(ツ)_/¯")
-
-client_utils.register_command(".shrug", handle_shrug)</code></pre>
+      <h3><code>client_utils.set_setting(key: str, value: Any) -&gt; None</code></h3>
+      <p>Атомарно сохраняет настройку плагина на диск.</p>
+      <pre><code class="language-python"># Чтение и запись пользовательских параметров
+is_enabled = client_utils.get_setting("auto_reply", default=True)
+client_utils.set_setting("auto_reply", not is_enabled)</code></pre>
     </main>
   </div>
 

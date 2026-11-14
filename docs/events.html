@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#09090b">
   <title>События и хуки | ExteraGram SDK</title>
@@ -24,7 +24,13 @@
       <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
       <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
     </nav>
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Меню">
+      <svg class="icon-menu" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+      <svg class="icon-close" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+    </button>
   </header>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <div class="layout-container">
     <aside class="sidebar">
@@ -55,46 +61,65 @@
           <li><a href="publishing.html">Верификация и публикация</a></li>
         </ul>
       </div>
+
+      <div class="sidebar-group mobile-only-group">
+        <div class="sidebar-title">Ресурсы</div>
+        <ul class="sidebar-links">
+          <li><a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub Репозиторий ↗</a></li>
+          <li><a href="https://t.me/oxDesktop" target="_blank">Telegram Канал ↗</a></li>
+        </ul>
+      </div>
     </aside>
 
     <main class="content-area">
-      <h1>События и хуки жизненного цикла</h1>
+      <h1>Событийная модель и перехват (Hooks)</h1>
       <p class="lead">
-        Движок плагинов oxDesktop построен на реактивной событийной модели. Плагины могут перехватывать входящие события, модифицировать текст перед отправкой или реагировать на смену активного диалога.
+        Движок плагинов построен на реактивной событийной модели. Плагины могут перехватывать входящие обновления, фильтровать исходящие сообщения и реагировать на действия пользователя через декораторы.
       </p>
 
-      <h2>Декоратор <code>@client_utils.on_message</code></h2>
-      <p>Вызывается при получении любого нового сообщения в доступных чатах:</p>
+      <h2>Декоратор @client_utils.on_message</h2>
+      <p>Срабатывает при получении нового входящего сообщения в любом доступном чате. Требует разрешение <code>messages.read</code>.</p>
+
       <pre><code class="language-python">import client_utils
 
 @client_utils.on_message
 def on_incoming_message(msg):
     peer_id = msg.get("peer_id")
     text = msg.get("text", "")
-    is_outgoing = msg.get("is_outgoing", False)
+    
+    # Реакция на ключевые слова
+    if "секрет" in text.lower():
+        client_utils.show_toast("Обнаружено ключевое слово в чате!")
+</code></pre>
 
-    if not is_outgoing and "привет" in text.lower():
-        client_utils.show_toast(f"Новое приветствие в чате {peer_id}")</code></pre>
+      <h2>Декоратор @client_utils.on_send</h2>
+      <p>Позволяет модифицировать или отменять отправку исходящего сообщения до передачи в сеть Telegram. Требует разрешение <code>messages.send</code>.</p>
 
-      <h2>Перехват отправки: <code>@client_utils.on_send</code></h2>
-      <p>Позволяет модифицировать или форматировать текст перед его передачей на сервер Telegram:</p>
       <pre><code class="language-python">import client_utils
 
 @client_utils.on_send
-def filter_outgoing(msg):
-    # Превращает кавычки в красивые типографические «елочки»
+def on_outgoing_message(msg):
     text = msg.get("text", "")
-    formatted = text.replace('"', '«', 1).replace('"', '»', 1)
-    return {"text": formatted}</code></pre>
+    
+    # Автозамена сокращений
+    if text == "спс":
+        msg["text"] = "Большое спасибо! 🙏"
+        return msg
+        
+    return msg
+</code></pre>
 
-      <h2>Смена активного чата: <code>@client_utils.on_chat_opened</code></h2>
-      <p>Срабатывает при переключении пользователя на другой диалог:</p>
+      <h2>События навигации и интерфейса</h2>
+      <p>События переключения экранов и открытия диалогов:</p>
+
       <pre><code class="language-python">import client_utils
 
 @client_utils.on_chat_opened
-def handle_chat_switch(chat_info):
-    title = chat_info.get("title", "Неизвестный чат")
-    # Логика плагина при открытии диалога</code></pre>
+def handle_chat_change(chat_info):
+    dialog_id = chat_info.get("id")
+    title = chat_info.get("title")
+    print(f"Пользователь перешёл в чат: {title} ({dialog_id})")
+</code></pre>
     </main>
   </div>
 

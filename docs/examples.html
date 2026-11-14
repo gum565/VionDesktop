@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#09090b">
   <title>Примеры плагинов | ExteraGram SDK</title>
@@ -24,7 +24,13 @@
       <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
       <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
     </nav>
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Меню">
+      <svg class="icon-menu" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+      <svg class="icon-close" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+    </button>
   </header>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <div class="layout-container">
     <aside class="sidebar">
@@ -55,6 +61,14 @@
           <li><a href="publishing.html">Верификация и публикация</a></li>
         </ul>
       </div>
+
+      <div class="sidebar-group mobile-only-group">
+        <div class="sidebar-title">Ресурсы</div>
+        <ul class="sidebar-links">
+          <li><a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub Репозиторий ↗</a></li>
+          <li><a href="https://t.me/oxDesktop" target="_blank">Telegram Канал ↗</a></li>
+        </ul>
+      </div>
     </aside>
 
     <main class="content-area">
@@ -69,7 +83,7 @@
 __id__ = "calc_plugin"
 __name__ = "Калькулятор"
 __version__ = "1.0.0"
-__author__ = "@nanodevmc"
+__author__ = "@oxDesktop"
 __description__ = "Вычисление математических выражений по команде .calc"
 __permissions__ = ["messages.read", "messages.send"]
 
@@ -100,7 +114,7 @@ def handle_calc(msg):
 __id__ = "spoiler_helper"
 __name__ = "Генератор спойлеров"
 __version__ = "1.0.0"
-__author__ = "@nanodevmc"
+__author__ = "@oxDesktop"
 __description__ = "Быстрое скрытие текста под спойлер командой .sp"
 __permissions__ = ["messages.send"]
 
@@ -121,7 +135,7 @@ def handle_spoiler(msg):
 __id__ = "pm_toast"
 __name__ = "PM Toast"
 __version__ = "1.0.0"
-__author__ = "@nanodevmc"
+__author__ = "@oxDesktop"
 __description__ = "Уведомление при переходе в личные сообщения"
 __permissions__ = ["ui", "hooks"]
 

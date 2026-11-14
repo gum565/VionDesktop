@@ -1,4 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Mobile drawer navigation
+  const toggleBtn = document.getElementById('mobile-menu-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+
+  if (toggleBtn && sidebar && backdrop) {
+    const toggleMenu = () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('active', isOpen);
+      toggleBtn.classList.toggle('active', isOpen);
+      document.body.classList.toggle('menu-open', isOpen);
+    };
+
+    toggleBtn.addEventListener('click', toggleMenu);
+    backdrop.addEventListener('click', toggleMenu);
+
+    sidebar.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        if (sidebar.classList.contains('open')) {
+          toggleMenu();
+        }
+      });
+    });
+  }
+
   // Copy button for code blocks
   document.querySelectorAll('pre').forEach(pre => {
     const code = pre.querySelector('code');
