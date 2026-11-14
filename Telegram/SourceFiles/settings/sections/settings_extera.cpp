@@ -3165,6 +3165,13 @@ void BuildPluginsEngine(SectionBuilder &builder) {
 	builder.card([&] {
 		AddLink(
 			builder,
+			u"oxdesktop_plugins_docs"_q,
+			u"Документация oxDesktop SDK"_q,
+			QString(),
+			u"https://nanodevmc.github.io/oxDesktop/"_q,
+			{ &st::menuIconFaq });
+		AddLink(
+			builder,
 			u"plugins_docs"_q,
 			tr::lng_extera_plugins_docs(),
 			QString(),
