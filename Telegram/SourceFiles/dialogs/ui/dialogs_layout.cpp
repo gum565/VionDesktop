@@ -1479,8 +1479,8 @@ void RowPainter::Paint(
 	const auto flags = (showSavedMessages ? Flag::SavedMessages : Flag(0))
 		| (showRepliesMessages ? Flag::RepliesMessages : Flag(0))
 		| (showVerifyCodes ? Flag::VerifyCodes : Flag(0));
-	const auto streamer = peer
-		? Extera::Streamer::ForPeer(peer)
+	const auto streamer = from
+		? Extera::Streamer::ForPeer(from)
 		: Extera::Streamer::ChatHide();
 	if (streamer.all()) {
 		PaintStreamerRow(p, context.st->height, context);

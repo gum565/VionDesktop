@@ -192,23 +192,23 @@ void Histories::clearAll() {
 	_map.clear();
 }
 
-void Histories::readInbox(not_null<History*> history) {
+void Histories::readInbox(not_null<History*> history, bool force) {
 	DEBUG_LOG(("Reading: readInbox called."));
 	if (history->lastServerMessageKnown()) {
 		const auto last = history->lastServerMessage();
 		DEBUG_LOG(("Reading: last known, reading till %1."
 			).arg(last ? last->id.bare : 0));
-		readInboxTill(history, last ? last->id : 0);
+		readInboxTill(history, last ? last->id : 0, force);
 		return;
 	} else if (history->loadedAtBottom()) {
 		if (const auto lastId = history->maxMsgId()) {
 			DEBUG_LOG(("Reading: loaded at bottom, maxMsgId %1."
 				).arg(lastId.bare));
-			readInboxTill(history, lastId);
+			readInboxTill(history, lastId, force);
 			return;
 		} else if (history->loadedAtTop()) {
 			DEBUG_LOG(("Reading: loaded at bottom, loaded at top."));
-			readInboxTill(history, 0);
+			readInboxTill(history, 0, force);
 			return;
 		}
 		DEBUG_LOG(("Reading: loaded at bottom, but requesting entry."));
@@ -219,7 +219,7 @@ void Histories::readInbox(not_null<History*> history) {
 		const auto last = history->lastServerMessage();
 		DEBUG_LOG(("Reading: got entry, reading till %1."
 			).arg(last ? last->id.bare : 0));
-		readInboxTill(history, last ? last->id : 0);
+		readInboxTill(history, last ? last->id : 0, force);
 	});
 }
 
@@ -271,6 +271,21 @@ void Histories::readInboxTill(
 		MsgId tillId,
 		bool force) {
 	Expects(IsServerMsgId(tillId) || (!tillId && !force));
+
+	const auto isGhostHidden = [&] {
+		if (history->peer->asChannel()) {
+			return Extera::Bool(u"ghost_hide_read_channels"_q);
+		} else if (history->peer->isUser()) {
+			return Extera::Bool(u"ghost_hide_read_pms"_q);
+		} else if (history->peer->isChat() || history->peer->isMegagroup()) {
+			return Extera::Bool(u"ghost_hide_read_groups"_q);
+		}
+		return false;
+	}();
+	if (isGhostHidden && !force) {
+		Core::App().notifications().clearIncomingFromHistory(history);
+		return;
+	}
 
 	DEBUG_LOG(("Reading: readInboxTill %1, force %2."
 		).arg(tillId.bare

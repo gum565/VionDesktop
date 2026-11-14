@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Документация плагинов oxDesktop | Быстрый старт</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-delta-logo">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 22,22 12,17 2,22"/></svg>
+      </div>
+      <span>oxDesktop Plugins</span>
+      <span class="badge-version">SDK v1.0.0</span>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="active">Документация</a>
+      <a href="api-reference.html">API Reference</a>
+      <a href="examples.html">Примеры</a>
+      <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
+      <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
+    </nav>
+  </header>
+
+  <div class="layout-container">
+    <aside class="sidebar">
+      <div class="search-box">
+        <input type="text" id="sidebar-search" class="search-input" placeholder="Поиск по документации...">
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Основы</div>
+        <ul class="sidebar-links">
+          <li><a href="index.html">Введение и установка</a></li>
+          <li><a href="manifest.html">Манифест (manifest.json)</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Разработка</div>
+        <ul class="sidebar-links">
+          <li><a href="api-reference.html">Python SDK (client_utils)</a></li>
+          <li><a href="events.html">События и хуки</a></li>
+          <li><a href="examples.html">Примеры плагинов</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Безопасность и релиз</div>
+        <ul class="sidebar-links">
+          <li><a href="publishing.html">Верификация и публикация</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="content-area">
+      <h1>Введение в среду плагинов oxDesktop</h1>
+      <p class="lead">
+        oxDesktop оснащён высокопроизводительным встроенным движком расширений на базе встроенного Python 3.11. Плагины позволяют автоматизировать действия в чатах, добавлять собственные команды, интерфейсные кнопки, интеграции с внешними API и модифицировать поведение клиента без перекомпиляции ядра C++.
+      </p>
+
+      <div class="glass-card alert-tip">
+        <strong>Архитектура:</strong> Среда плагинов oxDesktop полностью совместима со стандартом exteraGram / exDesktop SDK, обеспечивая плавную миграцию и расширенную поддержку десктопных возможностей.
+      </div>
+
+      <h2>Быстрый старт: ваш первый плагин</h2>
+      <p>Каждый плагин представляет собой отдельную папку внутри рабочей директории <code>tdata/plugins/&lt;plugin_id&gt;/</code> или распространяется в виде архива <code>.exd</code>.</p>
+
+      <h3>Структура файлов плагина:</h3>
+      <pre><code class="language-text">my_first_plugin/
+├── manifest.json       # Описание, авторство, версия и права доступа
+├── main.py             # Точка входа в плагин (Python 3.11)
+├── icon.png            # Иконка плагина в менеджере (опционально)
+└── README.md           # Описание и инструкции для пользователей</code></pre>
+
+      <h2>Шаг 1. Создание манифеста (manifest.json)</h2>
+      <p>Манифест задаёт уникальный идентификатор и разрешения, необходимые вашему плагину для взаимодействия с клиентом:</p>
+
+      <pre><code class="language-json">{
+  "id": "my_first_plugin",
+  "name": "Мой первый плагин",
+  "version": "1.0.0",
+  "author": "@nanodevmc",
+  "description": "Приветственный плагин, отправляющий уведомление при запуске.",
+  "main": "main.py",
+  "permissions": [
+    "ui",
+    "messages"
+  ]
+}</code></pre>
+
+      <h2>Шаг 2. Написание кода (main.py)</h2>
+      <p>Точка входа плагина использует модуль <code>client_utils</code>, автоматически предоставляемый средой выполнения oxDesktop:</p>
+
+      <pre><code class="language-python">import client_utils
+
+def on_start():
+    client_utils.show_toast("Плагин успешно запущен в oxDesktop!")
+
+# Регистрация хука на входящие сообщения
+@client_utils.on_message
+def handle_message(message):
+    if message.get("text") == "!ping":
+        client_utils.send_message(message["peer_id"], "pong! 🚀")
+
+on_start()</code></pre>
+
+      <h2>Установка и проверка</h2>
+      <ol>
+        <li>Откройте <strong>Настройки oxDesktop → Движок плагинов</strong>.</li>
+        <li>Включите <strong>Режим разработчика</strong> при необходимости локальной отладки.</li>
+        <li>Поместите папку плагина в директорию <code>tdata/plugins/</code> или перетащите архив <code>.exd</code> в окно клиента.</li>
+        <li>Плагин мгновенно появится в списке менеджера без перезапуска клиента.</li>
+      </ol>
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

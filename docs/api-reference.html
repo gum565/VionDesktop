@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Reference: client_utils | Документация oxDesktop</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-delta-logo">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 22,22 12,17 2,22"/></svg>
+      </div>
+      <span>oxDesktop Plugins</span>
+      <span class="badge-version">SDK v1.0.0</span>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html">Документация</a>
+      <a href="api-reference.html" class="active">API Reference</a>
+      <a href="examples.html">Примеры</a>
+      <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
+      <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
+    </nav>
+  </header>
+
+  <div class="layout-container">
+    <aside class="sidebar">
+      <div class="search-box">
+        <input type="text" id="sidebar-search" class="search-input" placeholder="Поиск по документации...">
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Основы</div>
+        <ul class="sidebar-links">
+          <li><a href="index.html">Введение и установка</a></li>
+          <li><a href="manifest.html">Манифест (manifest.json)</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Разработка</div>
+        <ul class="sidebar-links">
+          <li><a href="api-reference.html" class="active">Python SDK (client_utils)</a></li>
+          <li><a href="events.html">События и хуки</a></li>
+          <li><a href="examples.html">Примеры плагинов</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Безопасность и релиз</div>
+        <ul class="sidebar-links">
+          <li><a href="publishing.html">Верификация и публикация</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="content-area">
+      <h1>Python SDK: модуль <code>client_utils</code></h1>
+      <p class="lead">
+        Модуль <code>client_utils</code> встроен непосредственно в рантайм клиента. Он предоставляет высокоуровневый идиоматический Python API для работы с чатами, пользователями, сообщениями и интерфейсом.
+      </p>
+
+      <h2>Информационные методы</h2>
+
+      <h3><code>client_utils.get_app_version() -> str</code></h3>
+      <p>Возвращает текущую версию клиента oxDesktop (например, <code>"7.4.3"</code> или <code>"7.4.3.3"</code>).</p>
+
+      <h3><code>client_utils.get_app_version_full() -> str</code></h3>
+      <p>Возвращает полное имя сборки с номером суб-версии (например, <code>"7.4.3.3"</code>).</p>
+
+      <h2>Управление сообщениями</h2>
+
+      <h3><code>client_utils.send_message(peer_id: int, text: str, reply_to: int = 0)</code></h3>
+      <p>Отправляет текстовое сообщение в указанный диалог или чат.</p>
+      <pre><code class="language-python"># Пример отправки сообщения
+client_utils.send_message(peer_id=12345678, text="Привет из плагина!")</code></pre>
+
+      <h3><code>client_utils.edit_message(peer_id: int, msg_id: int, text: str)</code></h3>
+      <p>Редактирует текст ранее отправленного сообщения.</p>
+
+      <h3><code>client_utils.delete_message(peer_id: int, msg_id: int)</code></h3>
+      <p>Удаляет сообщение по его идентификатору.</p>
+
+      <h2>Пользовательский интерфейс (UI)</h2>
+
+      <h3><code>client_utils.show_toast(text: str, duration_ms: int = 3000)</code></h3>
+      <p>Отображает нативное всплывающее уведомление (Toast) в нижней части экрана клиента.</p>
+      <pre><code class="language-python">client_utils.show_toast("Настройки сохранены!", duration_ms=2500)</code></pre>
+
+      <h3><code>client_utils.show_popup(title: str, text: str)</code></h3>
+      <p>Отображает диалоговое модальное окно с кнопкой закрытия.</p>
+
+      <h2>Регистрация команд</h2>
+
+      <h3><code>client_utils.register_command(command: str, callback: callable)</code></h3>
+      <p>Регистрирует команду в строке ввода сообщений, начинающуюся с символа <code>.</code> или <code>!</code>.</p>
+      <pre><code class="language-python">def handle_shrug(ctx):
+    # Заменяет .shrug на эмодзи
+    client_utils.send_message(ctx["peer_id"], r"¯\_(ツ)_/¯")
+
+client_utils.register_command(".shrug", handle_shrug)</code></pre>
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

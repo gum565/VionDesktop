@@ -2286,7 +2286,7 @@ void Session::exteraReapplyPremiumEmoji() {
 	for (const auto &[item, views] : _views) {
 		items.push_back(const_cast<HistoryItem*>(item.get()));
 	}
-	for (const auto item : items) {
+	for (const auto &item : items) {
 		Extera::ReapplyLocalPremiumEmoji(item);
 	}
 }

@@ -755,7 +755,7 @@ void PaintGesturesPreview(
 void ShowBadgeInfoBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(st::boxWideWidth);
-		box->setNoContentMargin(true);
+		box->setTitle(tr::lng_exd_badge_title());
 		box->addTopButton(st::boxTitleClose, [=] { box->closeBox(); });
 
 		const auto self = controller->session().user();
@@ -765,135 +765,60 @@ void ShowBadgeInfoBox(not_null<Window::SessionController*> controller) {
 			: u"8162"_q;
 		const auto badgeTag = u"#"_q + badgeNumStr;
 
-		// Branded Liquid Glass Badge Showcase Card
-		constexpr auto kCardHeight = 170;
-		const auto showcase = box->addRow(
-			object_ptr<Ui::FixedHeightWidget>(box, kCardHeight),
-			style::margins(16, 12, 16, 4));
+		constexpr auto kHeaderHeight = 90;
+		const auto header = box->addRow(
+			object_ptr<Ui::FixedHeightWidget>(box, kHeaderHeight),
+			style::margins(16, 4, 16, 4));
 
-		showcase->paintRequest() | rpl::on_next([=] {
-			auto p = QPainter(showcase);
+		header->paintRequest() | rpl::on_next([=] {
+			auto p = QPainter(header);
 			auto hq = PainterHighQualityEnabler(p);
-			const auto w = showcase->width();
-			const auto h = showcase->height();
-			const auto rect = QRectF(0, 0, w, h).adjusted(1, 1, -1, -1);
+			const auto w = header->width();
+			const auto h = header->height();
 
-			// Glassmorphism card background with subtle flame ambient glow
-			auto bgGrad = QLinearGradient(0, 0, w, h);
-			bgGrad.setColorAt(0.0, QColor(42, 28, 26, 230));
-			bgGrad.setColorAt(0.5, QColor(28, 24, 25, 240));
-			bgGrad.setColorAt(1.0, QColor(22, 22, 26, 245));
-			p.setBrush(bgGrad);
-			p.setPen(QPen(QColor(218, 48, 24, 60), 1.0));
-			p.drawRoundedRect(rect, 14.0, 14.0);
+			const auto avSize = 56;
+			const auto avX = 16;
+			const auto avY = (h - avSize) / 2;
+			const auto avRect = QRect(avX, avY, avSize, avSize);
 
-			// Medal center badge icon
-			const auto cx = w / 2.0;
-			const auto medalCy = 46.0;
-			const auto medalR = 26.0;
+			auto path = QPainterPath();
+			path.addEllipse(QRectF(avRect));
+			p.save();
+			p.setClipPath(path);
+			const auto &logo = Window::Logo();
+			p.drawImage(avRect, logo.scaled(avSize, avSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+			p.restore();
 
-			// Soft radial glow behind medal
-			auto glow = QRadialGradient(QPointF(cx, medalCy), medalR * 1.8);
-			glow.setColorAt(0.0, QColor(255, 108, 42, 70));
-			glow.setColorAt(1.0, QColor(218, 48, 24, 0));
-			p.setBrush(glow);
-			p.setPen(Qt::NoPen);
-			p.drawEllipse(QPointF(cx, medalCy), medalR * 1.8, medalR * 1.8);
-
-			// Golden/flame medal outer circle
-			auto medalGrad = QLinearGradient(cx - medalR, medalCy - medalR, cx + medalR, medalCy + medalR);
-			medalGrad.setColorAt(0.0, QColor(255, 140, 50));
-			medalGrad.setColorAt(0.5, QColor(230, 65, 30));
-			medalGrad.setColorAt(1.0, QColor(190, 35, 15));
-			p.setBrush(medalGrad);
-			p.setPen(QPen(QColor(255, 210, 150, 180), 1.2));
-			p.drawEllipse(QPointF(cx, medalCy), medalR, medalR);
-
-			// Inner Aero Delta emblem on medal
-			QPolygonF delta;
-			delta << QPointF(cx, medalCy - 12.0)
-			      << QPointF(cx + 11.0, medalCy + 9.0)
-			      << QPointF(cx, medalCy + 4.5)
-			      << QPointF(cx - 11.0, medalCy + 9.0);
-			p.setBrush(Qt::white);
-			p.setPen(Qt::NoPen);
-			p.drawPolygon(delta);
-
-			// Badge pill label below medal
-			const auto pillW = 150.0;
-			const auto pillH = 22.0;
-			const auto pillRect = QRectF(cx - pillW / 2.0, medalCy + medalR + 8.0, pillW, pillH);
-			auto pillGrad = QLinearGradient(pillRect.topLeft(), pillRect.bottomRight());
-			pillGrad.setColorAt(0.0, QColor(218, 48, 24, 180));
-			pillGrad.setColorAt(1.0, QColor(255, 108, 42, 180));
-			p.setBrush(pillGrad);
-			p.setPen(QPen(QColor(255, 255, 255, 70), 0.8));
-			p.drawRoundedRect(pillRect, pillH / 2.0, pillH / 2.0);
-
-			p.setFont(st::semiboldFont);
-			p.setPen(Qt::white);
-			p.drawText(pillRect, Qt::AlignCenter, u"\u2726 "_q + badgeTag + u" \u2022 oxDesktop"_q);
-
-			// Live Chat Preview bubble inside the card
-			const auto chatRect = QRectF(16, h - 54, w - 32, 42);
-			p.setBrush(QColor(255, 255, 255, 12));
-			p.setPen(QPen(QColor(255, 255, 255, 18), 1.0));
-			p.drawRoundedRect(chatRect, 8.0, 8.0);
-
-			// Small avatar
-			const auto avSize = 26;
-			const auto avRect = QRect(chatRect.left() + 8, chatRect.top() + 8, avSize, avSize);
-			p.drawImage(avRect, Window::Logo().scaled(avSize, avSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-
-			// User name + badge inline
-			const auto nameText = self->name();
+			const auto textX = avX + avSize + 16;
 			p.setFont(st::semiboldFont);
 			p.setPen(st::windowActiveTextFg->c);
-			const auto nameX = chatRect.left() + 42;
-			p.drawText(nameX, chatRect.top() + 18, nameText);
+			p.drawText(textX, avY + 22, tr::lng_exd_badge_get(tr::now));
 
-			const auto nameW = st::semiboldFont->width(nameText);
 			p.setFont(st::normalFont);
 			p.setPen(QColor(255, 120, 50));
-			p.drawText(nameX + nameW + 6, chatRect.top() + 18, u"["_q + badgeTag + u"]"_q);
-
-			// Subtitle in chat preview
-			p.setFont(st::normalFont);
-			p.setPen(st::windowSubTextFg->c);
-			p.drawText(nameX, chatRect.top() + 33, u"\u0411\u0435\u0439\u0434\u0436 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0438 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u0442\u0441\u044F \u0432 \u0447\u0430\u0442\u0430\u0445"_q);
-		}, showcase->lifetime());
-
-		// Title
-		box->addRow(
-			object_ptr<Ui::FlatLabel>(
-				box,
-				rpl::single(u"\u0412\u0430\u0448\u0438 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438"_q),
-				st::exteraWelcomeTitle),
-			style::margins(16, 6, 16, 2),
-			style::al_top);
+			p.drawText(textX, avY + 44, u"Персональный номер: "_q + badgeTag);
+		}, header->lifetime());
 
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				rpl::single(QString::fromUtf8("\xD0\x97\xD0\xBD\xD0\xB0\xD1\x87\xD0\xBE\xD0\xBA ") + badgeTag + QString::fromUtf8(" \xE2\x80\x94 \xD0\xB2\xD0\xBE\xD1\x82 \xD1\x87\xD1\x82\xD0\xBE \xD0\xB2\xD0\xB0\xD0\xBC \xD0\xB4\xD0\xBE\xD1\x81\xD1\x82\xD1\x83\xD0\xBF\xD0\xBD\xD0\xBE:")),
+				rpl::single(u"Бейдж поддержки подтверждает ваш вклад в разработку клиента oxDesktop и серверов обхода блокировок."_q),
 				st::boxLabel),
-			style::margins(16, 0, 16, 8),
-			style::al_top);
+			style::margins(16, 4, 16, 8));
 
-		// Benefits Card
 		const auto card = box->addRow(
 			object_ptr<Ui::VerticalLayout>(box),
-			style::margins(16, 2, 16, 8));
+			style::margins(16, 2, 16, 12));
 		card->paintRequest() | rpl::on_next([=] {
 			auto p = QPainter(card);
 			auto hq = PainterHighQualityEnabler(p);
 			const auto rect = QRectF(card->rect()).adjusted(0.5, 0.5, -0.5, -0.5);
-			p.setPen(QPen(QColor(255, 255, 255, 20), 1.0));
+			p.setPen(QPen(QColor(255, 255, 255, 18), 1.0));
 			p.setBrush(QColor(255, 255, 255, 8));
-			p.drawRoundedRect(rect, 12.0, 12.0);
+			p.drawRoundedRect(rect, 10.0, 10.0);
 		}, card->lifetime());
 
-		const auto addBenefit = [&](
+		const auto addPerk = [&](
 				const style::icon *icon,
 				const QString &title,
 				const QString &desc) {
@@ -921,30 +846,26 @@ void ShowBadgeInfoBox(not_null<Window::SessionController*> controller) {
 			iconWidget->moveToLeft(0, 2);
 		};
 
-		addBenefit(
+		addPerk(
 			&st::menuIconPremium,
-			u"\u041D\u043E\u043C\u0435\u0440\u043D\u043E\u0439 \u0437\u043D\u0430\u0447\u043E\u043A"_q,
-			u"\u0417\u043D\u0430\u0447\u043E\u043A \u0441 \u0432\u0430\u0448\u0438\u043C \u043D\u043E\u043C\u0435\u0440\u043E\u043C \u0440\u044F\u0434\u043E\u043C \u0441 \u0438\u043C\u0435\u043D\u0435\u043C, \u0435\u0433\u043E \u0432\u0438\u0434\u044F\u0442 \u0432\u0441\u0435 \u0432 oxDesktop."_q);
+			u"Стрелочка ExteraGram и бейдж"_q,
+			u"Уникальный символ и бейдж поддержки рядом с вашим именем в чатах и профиле."_q);
 
-		addBenefit(
-			&st::menuIconSchedule,
-			u"\u0414\u0430\u0442\u044B \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438"_q,
-			u"\u0411\u043E\u043B\u0435\u0435 \u0442\u043E\u0447\u043D\u044B\u0435 \u0434\u0430\u0442\u044B \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u043E\u0432 \u0432 \u043F\u0440\u043E\u0444\u0438\u043B\u044F\u0445."_q);
+		addPerk(
+			&st::menuIconChannel,
+			u"Номерной статус"_q,
+			u"Порядковый номер спонсора в глобальном реестре поддержки клиентов."_q);
 
-		box->addRow(
-			object_ptr<Ui::FlatLabel>(
-				box,
-				rpl::single(u"\u041E\u0444\u0438\u0446\u0438\u0430\u043B\u044C\u043D\u044B\u0435 \u0431\u0435\u0439\u0434\u0436\u0438 \u0438 \u0440\u0430\u043D\u043D\u0438\u0435 \u0441\u0431\u043E\u0440\u043A\u0438 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F exteraGram."_q),
-				st::boxLabel),
-			style::margins(16, 4, 16, 6),
-			style::al_top);
+		addPerk(
+			&st::menuIconFaq,
+			u"Поддержка проекта"_q,
+			u"Помощь серверной инфраструктуре TgWsProxy и разработке новых функций."_q);
 
-		box->addButton(rpl::single(u"\u041B\u0438\u0447\u043D\u044B\u0439 (@radoqi)"_q), [=] {
-			UrlClickHandler::Open(u"https://t.me/radoqi"_q);
-			box->closeBox();
+		box->addButton(rpl::single(u"Купить стрелочку (@exteraAuthBot)"_q), [=] {
+			UrlClickHandler::Open(u"https://t.me/exteraAuthBot/donate"_q);
 		});
-		box->addButton(rpl::single(u"Extera (@ExteraOwner)"_q), [=] {
-			UrlClickHandler::Open(u"https://t.me/ExteraOwner"_q);
+
+		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
 		});
 	}));
@@ -2338,6 +2259,13 @@ void PartOther0(SectionBuilder &builder) {
 			.onClick = [=] { ShowBadgeInfoBox(controller); },
 			.keywords = { u"badge"_q, u"verified"_q },
 		});
+		builder.addButton({
+			.id = u"extera/badge_bot"_q,
+			.title = rpl::single(u"Купить стрелочку (@exteraAuthBot)"_q),
+			.icon = { &st::menuIconBotCommands },
+			.onClick = [=] { UrlClickHandler::Open(u"https://t.me/exteraAuthBot/donate"_q); },
+			.keywords = { u"badge"_q, u"donate"_q, u"bot"_q },
+		});
 	});
 	AddAbout(builder, tr::lng_exd_badge_about());
 }
@@ -3230,16 +3158,7 @@ void BuildPluginsEngine(SectionBuilder &builder) {
 			.st = &st::settingsButtonNoIcon,
 			.label = rpl::single(QString::fromLatin1(Extera::Plugins::kSdkVersion)),
 		});
-		builder.addButton({
-			.id = u"extera/plugins_runtime"_q,
-			.title = tr::lng_exd_plugins_engine(),
-			.st = &st::settingsButtonNoIcon,
-			.label = rpl::single(Extera::Plugins::Started()
-				? tr::lng_extera_plugins_runtime_running(tr::now)
-				: tr::lng_extera_plugins_runtime_stopped(tr::now)),
-		});
 	});
-	AddAbout(builder, tr::lng_extera_plugins_runtime_about());
 
 	builder.addSkip();
 	builder.addSubsectionTitle(tr::lng_extera_links());
@@ -3254,6 +3173,9 @@ void BuildPluginsEngine(SectionBuilder &builder) {
 		for (const auto &source : Extera::PluginTrust::Sources()) {
 			const auto bare = source.id;
 			const auto username = source.username;
+			if (username.compare(u"exteraPluginRepo"_q, Qt::CaseInsensitive) == 0) {
+				continue;
+			}
 			const auto channel = controller
 				? controller->session().data().channelLoaded(ChannelId(bare))
 				: nullptr;
@@ -3328,6 +3250,25 @@ void BuildAiChat(SectionBuilder &builder) {
 			.title = tr::lng_extera_ai_service(),
 			.icon = { &st::exteraIconWebsite },
 			.label = rpl::single(u"Google Gemini"_q),
+			.onClick = [=] {
+				if (controller) {
+					controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+						box->setTitle(rpl::single(u"Сервис ИИ (Google Gemini)"_q));
+						box->setWidth(st::boxWideWidth);
+						box->addRow(object_ptr<Ui::FlatLabel>(
+							box,
+							rpl::single(u"Для работы встроенного ИИ-ассистента oxDesktop используется Google Gemini API. Вы можете получить персональный бесплатный ключ в Google AI Studio."_q),
+							st::boxLabel),
+							style::margins(16, 8, 16, 8));
+						box->addButton(rpl::single(u"Получить ключ (Google AI Studio)"_q), [=] {
+							UrlClickHandler::Open(u"https://aistudio.google.com/app/apikey"_q);
+						});
+						box->addButton(tr::lng_close(), [=] {
+							box->closeBox();
+						});
+					}));
+				}
+			},
 		});
 		builder.addButton({
 			.id = u"extera/ai_key"_q,

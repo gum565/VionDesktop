@@ -185,9 +185,14 @@ std::vector<Source> Sources() {
 		auto result = std::vector<Source>();
 		result.reserve(remote->size());
 		for (const auto &source : *remote) {
+			if (source.username.compare(u"exteraPluginRepo"_q, Qt::CaseInsensitive) == 0) {
+				continue;
+			}
 			result.push_back({ .id = source.id, .username = source.username });
 		}
-		return result;
+		if (!result.empty()) {
+			return result;
+		}
 	}
 	return {
 		{ .id = 4469639949ULL, .username = u"oxDesktop"_q },

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>События и хуки | Документация oxDesktop</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-delta-logo">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 22,22 12,17 2,22"/></svg>
+      </div>
+      <span>oxDesktop Plugins</span>
+      <span class="badge-version">SDK v1.0.0</span>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html">Документация</a>
+      <a href="api-reference.html">API Reference</a>
+      <a href="examples.html">Примеры</a>
+      <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
+      <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
+    </nav>
+  </header>
+
+  <div class="layout-container">
+    <aside class="sidebar">
+      <div class="search-box">
+        <input type="text" id="sidebar-search" class="search-input" placeholder="Поиск по документации...">
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Основы</div>
+        <ul class="sidebar-links">
+          <li><a href="index.html">Введение и установка</a></li>
+          <li><a href="manifest.html">Манифест (manifest.json)</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Разработка</div>
+        <ul class="sidebar-links">
+          <li><a href="api-reference.html">Python SDK (client_utils)</a></li>
+          <li><a href="events.html" class="active">События и хуки</a></li>
+          <li><a href="examples.html">Примеры плагинов</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Безопасность и релиз</div>
+        <ul class="sidebar-links">
+          <li><a href="publishing.html">Верификация и публикация</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="content-area">
+      <h1>События и хуки жизненного цикла</h1>
+      <p class="lead">
+        Движок плагинов oxDesktop построен на реактивной событийной модели. Плагины могут перехватывать входящие события, модифицировать текст перед отправкой или реагировать на смену активного диалога.
+      </p>
+
+      <h2>Декоратор <code>@client_utils.on_message</code></h2>
+      <p>Вызывается при получении любого нового сообщения в доступных чатах:</p>
+      <pre><code class="language-python">import client_utils
+
+@client_utils.on_message
+def on_incoming_message(msg):
+    peer_id = msg.get("peer_id")
+    text = msg.get("text", "")
+    is_outgoing = msg.get("is_outgoing", False)
+
+    if not is_outgoing and "привет" in text.lower():
+        client_utils.show_toast(f"Новое приветствие в чате {peer_id}")</code></pre>
+
+      <h2>Перехват отправки: <code>@client_utils.on_send</code></h2>
+      <p>Позволяет модифицировать или форматировать текст перед его передачей на сервер Telegram:</p>
+      <pre><code class="language-python">import client_utils
+
+@client_utils.on_send
+def filter_outgoing(msg):
+    # Превращает кавычки в красивые типографические «елочки»
+    text = msg.get("text", "")
+    formatted = text.replace('"', '«', 1).replace('"', '»', 1)
+    return {"text": formatted}</code></pre>
+
+      <h2>Смена активного чата: <code>@client_utils.on_chat_opened</code></h2>
+      <p>Срабатывает при переключении пользователя на другой диалог:</p>
+      <pre><code class="language-python">import client_utils
+
+@client_utils.on_chat_opened
+def handle_chat_switch(chat_info):
+    title = chat_info.get("title", "Неизвестный чат")
+    # Логика плагина при открытии диалога</code></pre>
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

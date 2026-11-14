@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Публикация и безопасность | Документация oxDesktop</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-delta-logo">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 22,22 12,17 2,22"/></svg>
+      </div>
+      <span>oxDesktop Plugins</span>
+      <span class="badge-version">SDK v1.0.0</span>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html">Документация</a>
+      <a href="api-reference.html">API Reference</a>
+      <a href="examples.html">Примеры</a>
+      <a href="https://github.com/nanodevmc/oxDesktop" target="_blank">GitHub</a>
+      <a href="https://t.me/oxDesktop" target="_blank">Telegram</a>
+    </nav>
+  </header>
+
+  <div class="layout-container">
+    <aside class="sidebar">
+      <div class="search-box">
+        <input type="text" id="sidebar-search" class="search-input" placeholder="Поиск по документации...">
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Основы</div>
+        <ul class="sidebar-links">
+          <li><a href="index.html">Введение и установка</a></li>
+          <li><a href="manifest.html">Манифест (manifest.json)</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Разработка</div>
+        <ul class="sidebar-links">
+          <li><a href="api-reference.html">Python SDK (client_utils)</a></li>
+          <li><a href="events.html">События и хуки</a></li>
+          <li><a href="examples.html">Примеры плагинов</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Безопасность и релиз</div>
+        <ul class="sidebar-links">
+          <li><a href="publishing.html" class="active">Верификация и публикация</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="content-area">
+      <h1>Верификация, безопасность и публикация</h1>
+      <p class="lead">
+        Система доверия oxDesktop построена на строгой верификации контрольных сумм плагинов (SHA-256) через проверенные каналы и защите пользователей от вредоносного кода.
+      </p>
+
+      <h2>Упаковка плагина в формат .exd</h2>
+      <p>Формат <code>.exd</code> представляет собой стандартный ZIP-архив с переименованным расширением, в корне которого расположены <code>manifest.json</code> и исполняемые файлы плагина.</p>
+
+      <pre><code class="language-bash"># Создание архива плагина из терминала
+cd my_plugin/
+zip -r ../my_plugin.exd manifest.json main.py icon.png</code></pre>
+
+      <h2>Система PluginTrust и доверенные каналы</h2>
+      <p>
+        В oxDesktop встроен автоматический валидатор хэшей <code>PluginTrust</code>. При установке плагина клиент проверяет его контрольную сумму в официальных реестрах. Проверенные плагины получают бейдж подлинности <strong>«Проверенный источник»</strong>.
+      </p>
+
+      <div class="glass-card alert-info">
+        <strong>Официальный канал дистрибуции:</strong> Все проверенные плагины и системные расширения публикуются в официальном канале <a href="https://t.me/oxDesktop" target="_blank">@oxDesktop</a>.
+      </div>
+
+      <h2>Безопасный режим (Safe Mode)</h2>
+      <p>
+        Если плагин вызывает сбой или падение клиента, при следующем запуске oxDesktop автоматически активирует <strong>Безопасный режим</strong>, отключая сторонние расширения до подтверждения пользователем.
+      </p>
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
