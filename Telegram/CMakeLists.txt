@@ -1922,11 +1922,9 @@ PRIVATE
     settings/sections/settings_active_sessions.h
     extera/extera_app_icon.cpp
     extera/extera_app_icon.h
-    extera/extera_config.cpp
     extera/extera_config.h
     extera/extera_full_player.cpp
     extera/extera_full_player.h
-    extera/extera_lang.cpp
     extera/extera_lang.h
     extera/extera_pdf_viewer.cpp
     extera/extera_pdf_viewer.h
@@ -1950,7 +1948,6 @@ PRIVATE
     extera/extera_streamer.h
     extera/extera_update.cpp
     extera/extera_update.h
-    extera/extera_utils.cpp
     extera/extera_utils.h
     extera/extera_changelog.cpp
     extera/extera_changelog.h
