@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Манифест manifest.json | Документация oxDesktop</title>
+  <title>Манифест manifest.json | ExteraGram SDK</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
       <div class="brand-delta-logo">
         <svg viewBox="0 0 24 24"><polygon points="12,2 22,22 12,17 2,22"/></svg>
       </div>
-      <span>oxDesktop Plugins</span>
+      <span>ExteraGram Plugins</span>
       <span class="badge-version">SDK v1.0.0</span>
     </div>
     <nav class="header-nav">
@@ -58,8 +58,12 @@
     <main class="content-area">
       <h1>Спецификация манифеста (manifest.json)</h1>
       <p class="lead">
-        Файл <code>manifest.json</code> является обязательным дескриптором любого расширения. Он информирует клиент о свойствах, авторе, точке входа и запрашиваемых системных правах безопасности.
+        Файл <code>manifest.json</code> является дескриптором пакетного расширения (папка или <code>.exd</code>). Он информирует клиент о свойствах, авторе, точке входа и запрашиваемых системных правах безопасности.
       </p>
+
+      <div class="glass-card alert-tip">
+        <strong>Однофайловые плагины (.plugin):</strong> Если вы создаёте однофайловый плагин (<code>.plugin</code>), создавать <code>manifest.json</code> не нужно — все те же поля объявляются константами прямо в шапке скрипта (<code>__id__</code>, <code>__name__</code>, <code>__version__</code>, <code>__author__</code>, <code>__description__</code>, <code>__permissions__</code>).
+      </div>
 
       <h2>Полный пример манифеста</h2>
       <pre><code class="language-json">{

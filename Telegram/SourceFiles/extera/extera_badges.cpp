@@ -93,9 +93,6 @@ bool ApplyProfiles(const QByteArray &bytes, bool incremental) {
 				const auto obj = entry.toObject();
 				const auto id = ReadId(obj.value(u"id"_q));
 				const auto username = obj.value(u"username"_q).toString();
-				if (username.compare(u"exteraPluginRepo"_q, Qt::CaseInsensitive) == 0) {
-					continue;
-				}
 				if (id != 0 || !username.isEmpty()) {
 					list.push_back({ .id = id, .username = username });
 				}

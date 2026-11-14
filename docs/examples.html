@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Примеры плагинов | Документация oxDesktop</title>
+  <title>Примеры плагинов | ExteraGram SDK</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
       <div class="brand-delta-logo">
         <svg viewBox="0 0 24 24"><polygon points="12,2 22,22 12,17 2,22"/></svg>
       </div>
-      <span>oxDesktop Plugins</span>
+      <span>ExteraGram Plugins</span>
       <span class="badge-version">SDK v1.0.0</span>
     </div>
     <nav class="header-nav">
@@ -58,12 +58,20 @@
     <main class="content-area">
       <h1>Практические примеры плагинов</h1>
       <p class="lead">
-        Коллекция готовых шаблонов с чистым, идиоматическим Python-кодом для быстрого старта вашей разработки.
+        Коллекция готовых шаблонов с чистым, идиоматическим Python-кодом для создания ваших расширений.
       </p>
 
-      <h2>Пример 1: Быстрый математический калькулятор</h2>
-      <p>Вычисляет выражения прямо при вводе команды <code>.calc &lt;выражение&gt;</code>:</p>
-      <pre><code class="language-python">import client_utils
+      <h2>Пример 1: Однофайловый плагин (.plugin) — Математический калькулятор</h2>
+      <p>Полностью автономный плагин в одном файле <code>calc.plugin</code>. Вычисляет выражения прямо при вводе команды <code>.calc &lt;выражение&gt;</code>:</p>
+      <pre><code class="language-python"># calc.plugin
+__id__ = "calc_plugin"
+__name__ = "Калькулятор"
+__version__ = "1.0.0"
+__author__ = "@nanodevmc"
+__description__ = "Вычисление математических выражений по команде .calc"
+__permissions__ = ["messages.read", "messages.send"]
+
+import client_utils
 
 def safe_eval(expr):
     allowed_chars = "0123456789+-*/(). "
@@ -81,11 +89,20 @@ def handle_calc(msg):
         expr = text[6:].strip()
         res = safe_eval(expr)
         return {"text": f"🧮 {expr} = **{res}**"}
-    return msg</code></pre>
+    return msg
+</code></pre>
 
-      <h2>Пример 2: Быстрый генератор спойлеров</h2>
+      <h2>Пример 2: Однофайловый плагин (.plugin) — Генератор спойлеров</h2>
       <p>Оборачивает текст в скрытый спойлер при использовании команды <code>.sp &lt;текст&gt;</code>:</p>
-      <pre><code class="language-python">import client_utils
+      <pre><code class="language-python"># spoiler.plugin
+__id__ = "spoiler_helper"
+__name__ = "Генератор спойлеров"
+__version__ = "1.0.0"
+__author__ = "@nanodevmc"
+__description__ = "Быстрое скрытие текста под спойлер командой .sp"
+__permissions__ = ["messages.send"]
+
+import client_utils
 
 @client_utils.on_send
 def handle_spoiler(msg):
@@ -93,16 +110,26 @@ def handle_spoiler(msg):
     if text.startswith(".sp "):
         secret = text[4:].strip()
         return {"text": f"||{secret}||"}
-    return msg</code></pre>
+    return msg
+</code></pre>
 
-      <h2>Пример 3: Логирование в Toast при входе в личку</h2>
-      <p>Приветствует пользователя уведомлением при переходе в секретный чат или личку:</p>
-      <pre><code class="language-python">import client_utils
+      <h2>Пример 3: Логирование в Toast при входе в личные сообщения</h2>
+      <p>Показывает всплывающее уведомление при переходе в личный диалог:</p>
+      <pre><code class="language-python"># pm_toast.plugin
+__id__ = "pm_toast"
+__name__ = "PM Toast"
+__version__ = "1.0.0"
+__author__ = "@nanodevmc"
+__description__ = "Уведомление при переходе в личные сообщения"
+__permissions__ = ["ui", "hooks"]
+
+import client_utils
 
 @client_utils.on_chat_opened
 def notify_pm(chat):
     if chat.get("is_user"):
-        client_utils.show_toast(f"Открыт диалог с {chat.get('name')}")</code></pre>
+        client_utils.show_toast(f"Открыт диалог с {chat.get('name')}")
+</code></pre>
     </main>
   </div>
 
