@@ -31,8 +31,15 @@ const PROTO_TAG_SECURE: [u8; 4] = [0xdd, 0xdd, 0xdd, 0xdd];
 
 const SNI_CANDIDATES: &[&str] = &["sprinthost.ru", "vk.com", "yandex.ru"];
 
-fn get_dc_ip(_dc: u8) -> &'static str {
-    "149.154.167.220"
+fn get_dc_ips(dc: u8) -> &'static [&'static str] {
+    match dc {
+        1 => &["149.154.175.50", "149.154.175.53", "149.154.167.220"],
+        2 => &["149.154.167.220", "149.154.167.50"],
+        3 => &["149.154.175.100", "149.154.167.220"],
+        4 => &["149.154.167.91", "149.154.167.220"],
+        5 => &["149.154.171.5", "149.154.167.220"],
+        _ => &["149.154.167.220"],
+    }
 }
 
 #[derive(Debug)]
@@ -456,7 +463,7 @@ async fn handle_client(
 
     // Connect to Telegram WebSocket endpoint
     let mut ws_stream = None;
-    let ip = get_dc_ip(actual_dc);
+    let ips = get_dc_ips(actual_dc);
 
     let candidate_hosts = if is_media {
         vec![
@@ -469,38 +476,40 @@ async fn handle_client(
 
     // 1. Primary: TLS Domain Fronting directly to Telegram DC IP
     'fronting: for target_host in &candidate_hosts {
-        for sni in SNI_CANDIDATES {
-            match tokio::time::timeout(
-                Duration::from_millis(2500),
-                connect_fronted_ws(ip, target_host, sni, &tls_connector),
-            )
-            .await
-            {
-                Ok(Ok(ws)) => {
-                    logger
-                        .log(&format!(
-                            "[{}] Connected via TLS Domain Fronting to {} (SNI: {}, IP: {})",
-                            peer, target_host, sni, ip
-                        ))
-                        .await;
-                    ws_stream = Some(ws);
-                    break 'fronting;
-                }
-                Ok(Err(e)) => {
-                    logger
-                        .warn(&format!(
-                            "[{}] Fronting attempt to {} via {} failed: {}",
-                            peer, target_host, sni, e
-                        ))
-                        .await;
-                }
-                Err(_) => {
-                    logger
-                        .warn(&format!(
-                            "[{}] Fronting attempt to {} via {} timed out",
-                            peer, target_host, sni
-                        ))
-                        .await;
+        for &ip in ips {
+            for sni in SNI_CANDIDATES {
+                match tokio::time::timeout(
+                    Duration::from_millis(2500),
+                    connect_fronted_ws(ip, target_host, sni, &tls_connector),
+                )
+                .await
+                {
+                    Ok(Ok(ws)) => {
+                        logger
+                            .log(&format!(
+                                "[{}] Connected via TLS Domain Fronting to {} (SNI: {}, IP: {})",
+                                peer, target_host, sni, ip
+                            ))
+                            .await;
+                        ws_stream = Some(ws);
+                        break 'fronting;
+                    }
+                    Ok(Err(e)) => {
+                        logger
+                            .warn(&format!(
+                                "[{}] Fronting attempt to {} via {} ({}) failed: {}",
+                                peer, target_host, sni, ip, e
+                            ))
+                            .await;
+                    }
+                    Err(_) => {
+                        logger
+                            .warn(&format!(
+                                "[{}] Fronting attempt to {} via {} ({}) timed out",
+                                peer, target_host, sni, ip
+                            ))
+                            .await;
+                    }
                 }
             }
         }
@@ -552,14 +561,22 @@ async fn handle_client(
 
     // Direct MTProto TCP Fallback to Telegram DC if WS is blocked
     if ws_stream.is_none() {
-        logger.log(&format!("[{}] WS blocked/unavailable, activating direct TCP fallback to {}:443 for DC{}", peer, ip, actual_dc)).await;
-        match tokio::time::timeout(Duration::from_secs(5), TcpStream::connect(format!("{}:443", ip))).await {
-            Ok(Ok(mut tcp_stream)) => {
-                logger.log(&format!("[{}] Connected via direct TCP fallback to {}:443", peer, ip)).await;
-                if let Err(e) = tcp_stream.write_all(&relay_init).await {
-                    logger.warn(&format!("[{}] TCP fallback failed to send relay_init: {}", peer, e)).await;
-                    return;
-                }
+        let mut connected_tcp = None;
+        let mut connected_ip = "";
+        for &fallback_ip in ips {
+            logger.log(&format!("[{}] Trying direct TCP fallback to {}:443 for DC{}", peer, fallback_ip, actual_dc)).await;
+            if let Ok(Ok(tcp_stream)) = tokio::time::timeout(Duration::from_secs(3), TcpStream::connect(format!("{}:443", fallback_ip))).await {
+                logger.log(&format!("[{}] Connected via direct TCP fallback to {}:443", peer, fallback_ip)).await;
+                connected_tcp = Some(tcp_stream);
+                connected_ip = fallback_ip;
+                break;
+            }
+        }
+        if let Some(mut tcp_stream) = connected_tcp {
+            if let Err(e) = tcp_stream.write_all(&relay_init).await {
+                logger.warn(&format!("[{}] TCP fallback failed to send relay_init to {}: {}", peer, connected_ip, e)).await;
+                return;
+            }
                 let (mut tcp_reader, mut tcp_writer) = tcp_stream.into_split();
                 let (mut client_reader, mut client_writer) = client_socket.into_split();
 
