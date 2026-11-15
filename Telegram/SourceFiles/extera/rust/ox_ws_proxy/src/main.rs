@@ -393,19 +393,20 @@ async fn handle_client(
     }
 
     // Fallback to Cloudflare workers if direct fails
+    let ip = match actual_dc {
+        1 => "149.154.175.50",
+        2 => "149.154.167.220",
+        3 => "149.154.175.100",
+        4 => "149.154.167.220",
+        5 => "149.154.171.5",
+        _ => "149.154.167.220",
+    };
+
     if ws_stream.is_none() {
         for cf_domain in cf_domains.iter() {
-            let ip = match actual_dc {
-                1 => "149.154.175.50",
-                2 => "149.154.167.51",
-                3 => "149.154.175.100",
-                4 => "149.154.167.91",
-                5 => "149.154.171.5",
-                _ => "149.154.167.51",
-            };
             let cf_url = format!("wss://{}/apiws?dst={}&dc={}", cf_domain, ip, actual_dc);
             match tokio::time::timeout(
-                Duration::from_secs(5),
+                Duration::from_secs(4),
                 tokio_tungstenite::connect_async(&cf_url),
             )
             .await
@@ -422,11 +423,74 @@ async fn handle_client(
         }
     }
 
+    // Direct MTProto TCP Fallback to Telegram DC if WS is blocked
+    if ws_stream.is_none() {
+        logger.log(&format!("[{}] WS blocked/unavailable, activating direct TCP fallback to {}:443 for DC{}", peer, ip, actual_dc)).await;
+        match tokio::time::timeout(Duration::from_secs(5), TcpStream::connect(format!("{}:443", ip))).await {
+            Ok(Ok(mut tcp_stream)) => {
+                logger.log(&format!("[{}] Connected via direct TCP fallback to {}:443", peer, ip)).await;
+                if let Err(e) = tcp_stream.write_all(&relay_init).await {
+                    logger.warn(&format!("[{}] TCP fallback failed to send relay_init: {}", peer, e)).await;
+                    return;
+                }
+                let (mut tcp_reader, mut tcp_writer) = tcp_stream.into_split();
+                let (mut client_reader, mut client_writer) = client_socket.into_split();
+
+                let client_to_tcp = async {
+                    let mut buf = vec![0u8; 65536];
+                    loop {
+                        let n = match client_reader.read(&mut buf).await {
+                            Ok(0) => break,
+                            Ok(n) => n,
+                            Err(_) => break,
+                        };
+                        let chunk = &buf[..n];
+                        let mut plain = chunk.to_vec();
+                        clt_dec.apply_keystream(&mut plain);
+                        let mut cipher_chunk = plain;
+                        tg_enc.apply_keystream(&mut cipher_chunk);
+                        if let Err(_) = tcp_writer.write_all(&cipher_chunk).await {
+                            break;
+                        }
+                    }
+                };
+
+                let tcp_to_client = async {
+                    let mut buf = vec![0u8; 65536];
+                    loop {
+                        let n = match tcp_reader.read(&mut buf).await {
+                            Ok(0) => break,
+                            Ok(n) => n,
+                            Err(_) => break,
+                        };
+                        let chunk = &buf[..n];
+                        let mut plain = chunk.to_vec();
+                        tg_dec.apply_keystream(&mut plain);
+                        let mut cipher_chunk = plain;
+                        clt_enc.apply_keystream(&mut cipher_chunk);
+                        if let Err(_) = client_writer.write_all(&cipher_chunk).await {
+                            break;
+                        }
+                    }
+                };
+
+                tokio::select! {
+                    _ = client_to_tcp => {},
+                    _ = tcp_to_client => {},
+                }
+                return;
+            }
+            _ => {
+                logger.warn(&format!("[{}] TCP fallback failed to connect to {}:443", peer, ip)).await;
+            }
+        }
+    }
+
     let mut ws = match ws_stream {
         Some(w) => w,
         None => {
             logger
-                .warn(&format!("[{}] Failed to connect to any WS backend for DC{}", peer, actual_dc))
+                .warn(&format!("[{}] Failed to connect to any backend for DC{}", peer, actual_dc))
                 .await;
             return;
         }

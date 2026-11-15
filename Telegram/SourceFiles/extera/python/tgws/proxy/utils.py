@@ -175,7 +175,11 @@ def create_ssl_context(*, check_hostname: bool = True) -> ssl.SSLContext:
         context = ssl.create_default_context()
     context.load_default_certs()
     set_x25519(context)
-    context.check_hostname = check_hostname
+    if not check_hostname:
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+    else:
+        context.check_hostname = True
     return context
 
 
