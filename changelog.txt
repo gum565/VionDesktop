@@ -1,11 +1,11 @@
 7.4.3.3.1 (15.11.2026)
 
 Ru:
-- Полностью исправлен белый экран при запуске приложения на Windows 11 и видеокартах с аппаратным ускорением / RHI (включая процессоры AMD Ryzen): восстановлены и принудительно скомпилированы встроенные шейдеры графического композитора Qt (backingstorecompose.vert.qsb и backingstorecompose.frag.qsb).
-- Исправлен тихий режим установщика Windows (setup.iss): устранены всплывающее окно и зависание процесса при фоновой установке и обновлении.
-- Убран весь хардкод версий: теперь версия задаётся строго через единый источник правды version.txt и автоматически генерируется во все компоненты.
+- Исправлен белый экран при запуске (восстановлены шейдеры Qt)
+- Исправлен тихий режим инсталлятора
+- Убран хардкод версий (синхронизация из version.txt)
 
 En:
-- Completely fixed blank white screen on startup on Windows 11 and GPUs with hardware acceleration / RHI (including AMD Ryzen processors): restored and compiled built-in Qt graphics compositor shaders (backingstorecompose.vert.qsb and backingstorecompose.frag.qsb).
-- Fixed silent installer mode on Windows (setup.iss): eliminated lingering popup window and hanging background processes during silent install/updates.
-- Removed hardcoded version definitions: version is now driven strictly by version.txt as the single source of truth and generated into all components.
+- Fixed white screen on startup (restored Qt shaders)
+- Fixed silent installer mode
+- Removed hardcoded versions (synced from version.txt)

@@ -98,8 +98,6 @@ jobs:
         run: |
           if [ -f "changelog.txt" ]; then
             cat changelog.txt > release_notes.md
-          elif [ -f "CHANGELOG.md" ]; then
-            cat CHANGELOG.md > release_notes.md
           else
             echo "oxDesktop ${{ steps.meta.outputs.TAG }}" > release_notes.md
           fi
