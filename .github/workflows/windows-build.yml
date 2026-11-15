@@ -94,12 +94,25 @@ jobs:
                     if (-not (Test-Path $fullPath)) {
                       $dir = Split-Path $fullPath
                       if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-                      if (Test-Path $dummyObj) {
-                        Copy-Item -Path $dummyObj -Destination $fullPath -Force | Out-Null
-                      } else {
-                        New-Item -ItemType File -Path $fullPath -Force | Out-Null
+                      $compiledPlugin = $false
+                      if ($cl -and ($relPath -match '([A-Za-z0-9_]+Plugin)_init')) {
+                        $pluginName = $Matches[1]
+                        $tempCpp = Join-Path $env:TEMP "$pluginName`_init.cpp"
+                        Set-Content -Path $tempCpp -Value "#include <QtCore/qplugin.h>`r`nQ_IMPORT_PLUGIN($pluginName)`r`n"
+                        & $cl.FullName /c /nologo /O2 /MD /EHsc /std:c++17 /I"$qtDir\include" /I"$qtDir\include\QtCore" /Fo$fullPath $tempCpp | Out-Null
+                        if ($LASTEXITCODE -eq 0 -and (Test-Path $fullPath)) {
+                          Write-Host "Compiled genuine Qt plugin init for: $pluginName -> $relPath"
+                          $compiledPlugin = $true
+                        }
                       }
-                      Write-Host "Created valid COFF stub for missing Qt object: $relPath"
+                      if (-not $compiledPlugin) {
+                        if (Test-Path $dummyObj) {
+                          Copy-Item -Path $dummyObj -Destination $fullPath -Force | Out-Null
+                        } else {
+                          New-Item -ItemType File -Path $fullPath -Force | Out-Null
+                        }
+                        Write-Host "Created valid COFF stub for missing Qt object: $relPath"
+                      }
                     }
                   }
                 }
@@ -399,6 +412,12 @@ jobs:
           }
           Copy-Item (Join-Path $release 'python') $portable -Recurse
           Copy-Item (Join-Path $release 'modules') $portable -Recurse
+          $qtPlatforms = Join-Path $env:GITHUB_WORKSPACE 'Libraries\win64\Qt-6.11.2\plugins\platforms'
+          if (Test-Path $qtPlatforms) {
+            Write-Host "Copying Qt platforms to release and portable packages..."
+            Copy-Item $qtPlatforms (Join-Path $release 'platforms') -Recurse -Force
+            Copy-Item $qtPlatforms (Join-Path $portable 'platforms') -Recurse -Force
+          }
           if (Test-Path (Join-Path $release 'Updater.exe')) { Copy-Item (Join-Path $release 'Updater.exe') $portable }
           $cl = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\changelog.txt'
           if (Test-Path $cl) {

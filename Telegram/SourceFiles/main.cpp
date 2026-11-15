@@ -11,6 +11,11 @@ extern "C" {
 #include <openssl/crypto.h>
 } // extern "C"
 
+#if defined(_WIN32)
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+#endif
+
 int main(int argc, char *argv[]) {
 	// OpenSSL's own atexit handler runs OPENSSL_cleanup() on the main thread
 	// and frees the library globals while detached background tasks can still
