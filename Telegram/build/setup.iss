@@ -97,7 +97,6 @@ Source: "{#ReleasePath}\python\*"; DestDir: "{app}\python"; Flags: recursesubdir
 #if MyBuildTarget != "winarm"
 Source: "{#ReleasePath}\{#ModulesFolder}\d3d\d3dcompiler_47.dll"; DestDir: "{app}\{#ModulesFolder}\d3d"; Flags: ignoreversion
 #endif
-Source: "{#ReleasePath}\platforms\*"; DestDir: "{app}\platforms"; Flags: skipifsourcedoesntexist recursesubdirs createallsubdirs ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

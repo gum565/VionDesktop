@@ -267,11 +267,17 @@ State &Instance() {
 	return result;
 }
 
-void ApplyFallback() {
+void EnsureCurrentVersionChangelog() {
 	auto &state = Instance();
-	if (!state.releases.empty()) {
+	const auto currentVer = QString::fromUtf8(AppVersionStr).trimmed();
+	const auto hasCurrent = ranges::any_of(state.releases, [&](const StructuredRelease &rel) {
+		return rel.version.trimmed().startsWith(currentVer)
+			|| currentVer.startsWith(rel.version.trimmed());
+	});
+	if (hasCurrent) {
 		return;
 	}
+
 	for (const auto &loc : {
 		u":/gui/changelog.txt"_q,
 		cWorkingDir() + u"changelog.txt"_q,
@@ -284,13 +290,47 @@ void ApplyFallback() {
 			const auto content = QString::fromUtf8(file.readAll());
 			file.close();
 			if (!content.isEmpty()) {
-				state.releases = ParseReleasesFromText(content);
-				if (!state.releases.empty()) {
-					break;
+				auto localReleases = ParseReleasesFromText(content);
+				for (auto &rel : localReleases) {
+					if (rel.version.trimmed().startsWith(currentVer)
+						|| currentVer.startsWith(rel.version.trimmed())) {
+						state.releases.insert(state.releases.begin(), std::move(rel));
+						return;
+					}
+				}
+				if (!localReleases.empty() && state.releases.empty()) {
+					state.releases = std::move(localReleases);
+					return;
 				}
 			}
 		}
 	}
+}
+
+void ApplyFallback() {
+	auto &state = Instance();
+	if (state.releases.empty()) {
+		for (const auto &loc : {
+			u":/gui/changelog.txt"_q,
+			cWorkingDir() + u"changelog.txt"_q,
+			QDir::currentPath() + u"/changelog.txt"_q,
+			QCoreApplication::applicationDirPath() + u"/changelog.txt"_q,
+			u"changelog.txt"_q,
+		}) {
+			auto file = QFile(loc);
+			if (file.open(QIODevice::ReadOnly)) {
+				const auto content = QString::fromUtf8(file.readAll());
+				file.close();
+				if (!content.isEmpty()) {
+					state.releases = ParseReleasesFromText(content);
+					if (!state.releases.empty()) {
+						break;
+					}
+				}
+			}
+		}
+	}
+	EnsureCurrentVersionChangelog();
 }
 
 bool Apply(const QByteArray &bytes) {
@@ -346,9 +386,7 @@ bool Apply(const QByteArray &bytes) {
 void Finish(bool ok) {
 	auto &state = Instance();
 	state.loading = false;
-	if (state.releases.empty()) {
-		ApplyFallback();
-	}
+	ApplyFallback();
 	state.failed = !ok && state.releases.empty();
 	for (const auto &callback : base::take(state.waiting)) {
 		callback();
@@ -699,7 +737,12 @@ void FillLatestFromChangelog(not_null<Ui::VerticalLayout*> container) {
 	ApplyFallback();
 	const auto &releases = Instance().releases;
 	if (!releases.empty()) {
-		FillReleaseContent(container, releases.front(), false);
+		const auto targetVer = QString::fromUtf8(AppVersionStr).trimmed();
+		const auto it = ranges::find_if(releases, [&](const StructuredRelease &rel) {
+			return rel.version.trimmed().startsWith(targetVer)
+				|| targetVer.startsWith(rel.version.trimmed());
+		});
+		FillReleaseContent(container, (it != end(releases)) ? *it : releases.front(), false);
 	}
 }
 

@@ -1,4 +1,4 @@
-7.4.3.3 (13.11.26)
+7.4.3.3 (15.11.26)
 Ru:
 Added:
 - Обновление базы Telegram Desktop до 7.4.3:
@@ -7,14 +7,23 @@ Added:
   — Анимация полёта отправленных текстовых сообщений прямо в пузыри чата
   — Запрос разрешений на доступ к камере и микрофону в мини-приложениях для Windows и macOS
   — Нижняя панель действий (Bottom Button) в списках диалогов
-- Нативный обход блокировок oxWsProxy на Rust:
-  — Сверхбыстрый запуск за 2-3 мс и ультранизкое потребление ОЗУ (3-4 МБ вместо 50+ МБ у Python)
-  — Размер бинарника всего 1.0 МБ с LTO и стриппингом символов
-  — Приоритетный автоматический запуск нативного прокси при включении встроенного обхода
-- Автоматическая очистка устаревших локальных адресов прокси (127.0.0.1) в списке подключений
+- Нативный сервис обхода блокировок oxWsProxy на Rust:
+  — Мгновенный запуск и минимальное потребление ресурсов памяти
+  — Автоматический запуск нативного прокси при включении встроенного обхода
+  — Реактивный статус подключения во [вкладке «Прокси»](tg://settings/proxy?=ws_proxy)
+- Навигация по кликабельным диплинкам к параметрам настроек: формат tg://раздел?=(параметр) с переходом и подсветкой пункта
+- Выбор кастомного шрифта (TTF / OTF / WOFF2) в [настройках оформления](tg://settings/appearance?=custom_font)
+- Теневые черновики: локальное сохранение редакций текста и откат по Ctrl+Shift+Z в [настройках oxDesktop](tg://settings/extera)
+- Быстрый HUD-переключатель чатов по комбинации Ctrl+Shift+K или Ctrl+P
+- Прямой поиск пользователей и каналов по цифровому ID (включая формат id123456)
+- Отправка ответов на исходящие сообщения до завершения их загрузки
+- Интерактивная 3D-модель значка поддержки [tg://support](tg://support) и обновлённый мастер приветствия [tg://welcome](tg://welcome)
+- Фирменная иконка в стиле Aero-Delta по умолчанию и обновлённое оформление стартового экрана
+- Автоматическая очистка устаревших локальных адресов прокси в списке подключений
 
 Fixes:
-- Устранён сбой (Use-After-Free) при быстром переключении шагов в окне приветствия tg://welcome
+- Устранён сбой (Use-After-Free) при быстром переключении шагов в мастере приветствия tg://welcome
+- Исправлена работа инлайн-калькулятора в поле ввода: поддержка степеней (2²=, (2)²=) и формул
 - Исправлен импорт балансировщика H2 fallback в фоновом транспорте
 - Исправлен сброс пользовательской папки загрузок и настроек при обновлении
 - Устранено дрожание развёрнутого окна на Windows и вылет всплывающих уведомлений за пределы экрана
@@ -22,10 +31,14 @@ Fixes:
 - Исправлена потеря отступов первой строки в блоках моноширинного кода
 - Исправлено срабатывание горячих клавиш сохранения в медиапросмотрщике
 - Исправлены падения при удалении топиков форума
+- Добавлен отступ у музыкального виджета сохранённых треков в профиле пользователей
 
 Updated:
-- Независимая модульная архитектура и глубокий clean-room рефакторинг компонентов
-- Оптимизированы пайплайны CI/CD: стабильное кэширование предварительно собранных библиотек через ci-cache с ускорением сборки на 1-2 часа
+- Обновление умного анти-призрака: статус набора текста скрывается при вычислениях на лету
+- Лимит одновременно подключенных аккаунтов увеличен до 5 в [управлении профилем](tg://settings)
+- Повышенная четкость и динамическое обновление иконки в системном трее Windows (100%–200%)
+- Независимая модульная архитектура и чистый рефакторинг компонентов
+- Оптимизированы пайплайны сборки и кэширования для ускорения компиляции
 
 En:
 Added:
@@ -35,65 +48,34 @@ Added:
   — Flight animation for sent text messages gliding into chat bubbles
   — Permission requests for camera and microphone in mini apps on Windows and macOS
   — Bottom action button support in dialog lists
-- Native Rust bypass proxy oxWsProxy:
-  — Instant 2-3 ms startup and ultra-low RAM footprint (3-4 MB vs 50+ MB with Python)
-  — Lightweight 1.0 MB binary compiled with LTO and stripped symbols
-  — Automatic priority launch of native proxy on bypass activation
-- Automatic cleanup of stale local proxy entries (127.0.0.1) from connection list
+- Native Rust bypass proxy service oxWsProxy:
+  — Instant startup and minimal memory footprint
+  — Automatic launch of native proxy on bypass activation
+  — Reactive connection status toggle in [Proxy settings](tg://settings/proxy?=ws_proxy)
+- Deep links navigation to settings parameters: tg://section?=(parameter) format with direct jump and highlight
+- Custom font picker (TTF / OTF / WOFF2) in [Appearance settings](tg://settings/appearance?=custom_font)
+- Shadow Drafts: local message revision history with Ctrl+Shift+Z restore in [oxDesktop settings](tg://settings/extera)
+- Quick HUD chat switcher shortcut via Ctrl+Shift+K or Ctrl+P
+- Direct search for users and channels by numeric ID (including id123456 format)
+- Send replies to pending messages before upload completes
+- Interactive 3D support badge model [tg://support](tg://support) and refreshed welcome wizard [tg://welcome](tg://welcome)
+- Default signature Aero-Delta app icon and refreshed start screen layout
+- Automatic cleanup of stale local proxy entries from connection list
 
 Fixes:
 - Fixed Use-After-Free crash on rapid step transitions in tg://welcome setup wizard
+- Inline input calculator fix: added support for superscript exponents (2²=, (2)²=) and formulas
 - Fixed balancer import in H2 fallback transport
 - Fixed custom download folder and preference resets across updates
 - Fixed maximized window jitter and off-screen notifications on Windows
 - Fixed launch crashes on specific Windows configurations
 - Fixed indentation loss on first line in formatted code blocks
 - Fixed media viewer save hotkeys and forum topic deletion crashes
-
-Updated:
-- Decoupled modular architecture and deep clean-room refactoring of client components
-- Optimized CI/CD build cache pipelines via ci-cache prebuilt assets skipping multi-hour library builds
-
-7.3.3 (05.11.26)
-Ru:
-Added:
-- Портирована система кликабельных диплинков к параметрам настроек: формат tg://место?=(параметр) или tg://место?=параметр с переходом и подсветкой нужного пункта
-- Встроенный обход блокировок: отдельная кнопка подключения и реактивный статус во [вкладке «Прокси»](tg://settings/proxy?=ws_proxy)
-- Выбор кастомного шрифта (TTF / OTF / WOFF2) в [настройках оформления](tg://settings/appearance?=custom_font)
-- Теневые черновики: локальное сохранение редакций текста и откат по Ctrl+Shift+Z в [настройках oxDesktop](tg://settings/extera)
-- Быстрый HUD-переключатель чатов по комбинации Ctrl+Shift+K или Ctrl+P
-- Прямой поиск пользователей и каналов по цифровому ID (включая формат id123456)
-- Отправка сообщений в ответ для неотправленных (грузящихся) сообщений
-- Интерактивная 3D-модель значка поддержки [tg://support](tg://support) и обновленный мастер приветствия [tg://welcome](tg://welcome)
-- Фирменная иконка в стиле Aero-Delta по умолчанию везде и обновленное оформление стартового экрана
-
-Fixes:
-- Фикс Инлайн-калькулятора: в поле ввода добавлена поддержка степеней (2²=, (2)²=) и сложных формул
-- Добавлен отступ у муз. виджета сохраненных треков в профиле пользователей
-
-Updated:
-- Обновление анти-призрака: статус набора текста скрывается при вычислениях на лету
-- Лимит одновременно подключенных аккаунтов установлен на 5 в [управлении профилем](tg://settings)
-- Повышенная четкость и динамическое обновление иконки в системном трее Windows (100%–200%)
-
-
-En:
-Added:
-- Ported deep links navigation to settings parameters: tg://place?=(parameter) or tg://place?=parameter format with direct jump and highlight
-- Built-in connection bypass: dedicated toggle button with reactive status in the [Proxy settings](tg://settings/proxy?=ws_proxy)
-- Custom font picker (TTF / OTF / WOFF2) in [Appearance settings](tg://settings/appearance?=custom_font)
-- Shadow Drafts: local message revision history with Ctrl+Shift+Z restore in [oxDesktop settings](tg://settings/extera)
-- Quick HUD chat switcher shortcut via Ctrl+Shift+K or Ctrl+P
-- Direct search for users and channels by numeric ID (including id123456 format)
-- Send replies to pending (uploading) messages before upload completes
-- Interactive 3D support badge model [tg://support](tg://support) and refreshed welcome setup wizard [tg://welcome](tg://welcome)
-- Default signature Aero-Delta app icon everywhere and refreshed start screen layout
-
-Fixes:
-- Inline input calculator fix: added support for superscript exponents (2²=, (2)²=) and complex formulas in the input field
 - Added padding for saved music widget in user profiles
 
 Updated:
 - Smart Ghost update: typing indicator suppressed during on-the-fly math evaluations
 - Max connected accounts limit set to 5 in [Account settings](tg://settings)
 - Crisp high-DPI Windows tray icon supersampling and live refresh on icon change (100%–200%)
+- Decoupled modular architecture and clean component refactoring
+- Optimized CI/CD build cache pipelines for faster compilation

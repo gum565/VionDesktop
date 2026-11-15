@@ -14,6 +14,9 @@ extern "C" {
 #if defined(_WIN32)
 #include <QtPlugin>
 Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+Q_IMPORT_PLUGIN(QWebpPlugin)
+Q_IMPORT_PLUGIN(QJpegPlugin)
+Q_IMPORT_PLUGIN(QGifPlugin)
 #endif
 
 int main(int argc, char *argv[]) {
