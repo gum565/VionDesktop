@@ -11,17 +11,111 @@ use ctr::cipher::{KeyIvInit, StreamCipher};
 use ctr::Ctr128BE;
 use futures_util::{SinkExt, StreamExt};
 use rand::RngCore;
+use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier};
+use rustls_pki_types::{CertificateDer, ServerName, UnixTime};
 use sha2::{Digest, Sha256};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
+use tokio_rustls::TlsConnector;
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use tokio_tungstenite::tungstenite::http::HeaderValue;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{client_async, MaybeTlsStream, WebSocketStream};
 
 type Aes256Ctr = Ctr128BE<Aes256>;
 
 const PROTO_TAG_ABRIDGED: [u8; 4] = [0xef, 0xef, 0xef, 0xef];
 const PROTO_TAG_INTERMEDIATE: [u8; 4] = [0xee, 0xee, 0xee, 0xee];
 const PROTO_TAG_SECURE: [u8; 4] = [0xdd, 0xdd, 0xdd, 0xdd];
+
+const SNI_CANDIDATES: &[&str] = &["sprinthost.ru", "vk.com", "yandex.ru"];
+
+fn get_dc_ip(dc: u8) -> &'static str {
+    match dc {
+        1 => "149.154.175.50",
+        2 => "149.154.167.220",
+        3 => "149.154.175.100",
+        4 => "149.154.167.220",
+        5 => "149.154.171.5",
+        _ => "149.154.167.220",
+    }
+}
+
+#[derive(Debug)]
+struct NoVerifier;
+
+impl ServerCertVerifier for NoVerifier {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &CertificateDer<'_>,
+        _intermediates: &[CertificateDer<'_>],
+        _server_name: &ServerName<'_>,
+        _ocsp_response: &[u8],
+        _now: UnixTime,
+    ) -> Result<ServerCertVerified, rustls::Error> {
+        Ok(ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        _message: &[u8],
+        _cert: &CertificateDer<'_>,
+        _dss: &rustls::DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, rustls::Error> {
+        Ok(HandshakeSignatureValid::assertion())
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        _message: &[u8],
+        _cert: &CertificateDer<'_>,
+        _dss: &rustls::DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, rustls::Error> {
+        Ok(HandshakeSignatureValid::assertion())
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+        rustls::crypto::ring::default_provider()
+            .signature_verification_algorithms
+            .supported_schemes()
+    }
+}
+
+fn create_fronting_tls_connector() -> TlsConnector {
+    let config = rustls::ClientConfig::builder_with_provider(Arc::new(
+        rustls::crypto::ring::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()
+    .expect("TLS protocol versions")
+    .dangerous()
+    .with_custom_certificate_verifier(Arc::new(NoVerifier))
+    .with_no_client_auth();
+    TlsConnector::from(Arc::new(config))
+}
+
+async fn connect_fronted_ws(
+    dc_ip: &str,
+    target_host: &str,
+    sni: &str,
+    connector: &TlsConnector,
+) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, Box<dyn std::error::Error + Send + Sync>> {
+    let tcp = TcpStream::connect(format!("{}:443", dc_ip)).await?;
+    let _ = tcp.set_nodelay(true);
+    let server_name = ServerName::try_from(sni.to_string())?;
+    let tls = connector.connect(server_name, tcp).await?;
+    let stream = MaybeTlsStream::Rustls(tls);
+
+    let uri = format!("wss://{}/apiws", target_host);
+    let mut request = uri.into_client_request()?;
+    request.headers_mut().insert(
+        "Sec-WebSocket-Protocol",
+        HeaderValue::from_static("binary"),
+    );
+
+    let (ws, _resp) = client_async(request, stream).await?;
+    Ok(ws)
+}
 
 #[derive(Clone)]
 struct Logger {
@@ -301,6 +395,7 @@ async fn handle_client(
     peer: SocketAddr,
     secret: Arc<Vec<u8>>,
     cf_domains: Arc<Vec<String>>,
+    tls_connector: Arc<TlsConnector>,
     logger: Logger,
 ) {
     let mut handshake = [0u8; 64];
@@ -368,40 +463,79 @@ async fn handle_client(
 
     // Connect to Telegram WebSocket endpoint
     let mut ws_stream = None;
-    let direct_url = format!("wss://kws{}.web.telegram.org/apiws", actual_dc);
-    let direct_media_url = format!("wss://kws{}-1.web.telegram.org/apiws", actual_dc);
-    let candidate_direct = if is_media {
-        vec![direct_media_url, direct_url]
+    let ip = get_dc_ip(actual_dc);
+
+    let candidate_hosts = if is_media {
+        vec![
+            format!("kws{}-1.web.telegram.org", actual_dc),
+            format!("kws{}.web.telegram.org", actual_dc),
+        ]
     } else {
-        vec![direct_url]
+        vec![format!("kws{}.web.telegram.org", actual_dc)]
     };
 
-    for url in candidate_direct {
-        match tokio::time::timeout(
-            Duration::from_secs(5),
-            tokio_tungstenite::connect_async(&url),
-        )
-        .await
-        {
-            Ok(Ok((ws, _))) => {
-                logger.log(&format!("[{}] Connected to direct WS: {}", peer, url)).await;
-                ws_stream = Some(ws);
-                break;
+    // 1. Primary: TLS Domain Fronting directly to Telegram DC IP
+    'fronting: for target_host in &candidate_hosts {
+        for sni in SNI_CANDIDATES {
+            match tokio::time::timeout(
+                Duration::from_secs(5),
+                connect_fronted_ws(ip, target_host, sni, &tls_connector),
+            )
+            .await
+            {
+                Ok(Ok(ws)) => {
+                    logger
+                        .log(&format!(
+                            "[{}] Connected via TLS Domain Fronting to {} (SNI: {}, IP: {})",
+                            peer, target_host, sni, ip
+                        ))
+                        .await;
+                    ws_stream = Some(ws);
+                    break 'fronting;
+                }
+                Ok(Err(e)) => {
+                    logger
+                        .warn(&format!(
+                            "[{}] Fronting attempt to {} via {} failed: {}",
+                            peer, target_host, sni, e
+                        ))
+                        .await;
+                }
+                Err(_) => {
+                    logger
+                        .warn(&format!(
+                            "[{}] Fronting attempt to {} via {} timed out",
+                            peer, target_host, sni
+                        ))
+                        .await;
+                }
             }
-            _ => continue,
         }
     }
 
-    // Fallback to Cloudflare workers if direct fails
-    let ip = match actual_dc {
-        1 => "149.154.175.50",
-        2 => "149.154.167.220",
-        3 => "149.154.175.100",
-        4 => "149.154.167.220",
-        5 => "149.154.171.5",
-        _ => "149.154.167.220",
-    };
+    // 2. Direct fallback (in case user is outside censored network)
+    if ws_stream.is_none() {
+        for target_host in &candidate_hosts {
+            let direct_url = format!("wss://{}/apiws", target_host);
+            match tokio::time::timeout(
+                Duration::from_secs(4),
+                tokio_tungstenite::connect_async(&direct_url),
+            )
+            .await
+            {
+                Ok(Ok((ws, _))) => {
+                    logger
+                        .log(&format!("[{}] Connected to direct WS: {}", peer, direct_url))
+                        .await;
+                    ws_stream = Some(ws);
+                    break;
+                }
+                _ => continue,
+            }
+        }
+    }
 
+    // 3. Fallback to Cloudflare workers if direct fails
     if ws_stream.is_none() {
         for cf_domain in cf_domains.iter() {
             let cf_url = format!("wss://{}/apiws?dst={}&dc={}", cf_domain, ip, actual_dc);
@@ -606,6 +740,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let secret = hex::decode(&secret_hex).unwrap_or_else(|_| vec![0u8; 16]);
     let secret = Arc::new(secret);
     let cf_domains = Arc::new(decode_cf_domains());
+    let tls_connector = Arc::new(create_fronting_tls_connector());
     let logger = Logger::new(log_file);
 
     if let Some(pid) = parent_pid {
@@ -631,9 +766,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok((socket, peer)) => {
                 let secret_clone = Arc::clone(&secret);
                 let cf_clone = Arc::clone(&cf_domains);
+                let tls_clone = Arc::clone(&tls_connector);
                 let logger_clone = logger.clone();
                 tokio::spawn(async move {
-                    handle_client(socket, peer, secret_clone, cf_clone, logger_clone).await;
+                    handle_client(socket, peer, secret_clone, cf_clone, tls_clone, logger_clone).await;
                 });
             }
             Err(e) => {
