@@ -58,7 +58,64 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Check for C++ core changes
+        id: diff_check
+        working-directory: tdesktop
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $needBuild = $true
+          try {
+            $lastRuns = gh run list --workflow="Windows build" --status=success --limit=1 -R "$env:GH_REPO" --json databaseId,headSha | ConvertFrom-Json
+            if ($lastRuns -and $lastRuns.Count -gt 0) {
+              $lastSha = $lastRuns[0].headSha
+              $lastRunId = $lastRuns[0].databaseId
+              Write-Host "Last successful build: Run ID $lastRunId @ $lastSha"
+              git fetch --depth=50 origin main 2>$null
+              $rawDiff = git diff --name-only "$lastSha" HEAD -- Telegram/SourceFiles/ cmake/ CMakeLists.txt Telegram/build/
+              $cppDiff = @($rawDiff | Where-Object {
+                $_ -notmatch '^Telegram/SourceFiles/extera/rust/' -and
+                $_ -notmatch '^Telegram/SourceFiles/extera/python/' -and
+                $_ -notmatch '\.md$'
+              })
+              if ($cppDiff.Count -eq 0) {
+                Write-Host "No C++ core changes detected between $lastSha and HEAD!"
+                Write-Host "Fetching previous portable artifact from run $lastRunId..."
+                $tempDir = Join-Path $env:GITHUB_WORKSPACE 'temp_prev_portable'
+                New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+                gh run download "$lastRunId" -n oxDesktop-windows-portable --dir $tempDir -R "$env:GH_REPO"
+                $zip = Get-ChildItem -Path $tempDir -Filter "*.zip" | Select-Object -First 1
+                if ($zip) {
+                  $releaseDir = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\out\Release'
+                  New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
+                  Expand-Archive -Path $zip.FullName -DestinationPath $releaseDir -Force
+                  if (Test-Path (Join-Path $releaseDir 'oxDesktop.exe')) {
+                    Copy-Item (Join-Path $releaseDir 'oxDesktop.exe') (Join-Path $releaseDir 'Telegram.exe') -Force
+                    Write-Host "Restored prebuilt Windows binaries successfully from run $lastRunId!"
+                    $needBuild = $false
+                  }
+                  Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+              } else {
+                Write-Host "C++ core files changed ($($cppDiff.Count) files):"
+                $cppDiff | ForEach-Object { Write-Host " - $_" }
+              }
+            }
+          } catch {
+            Write-Host "Diff check warning: $_"
+          }
+          if ($needBuild) {
+            Write-Host "Full C++ compilation will run."
+            "skip_cpp_build=false" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "Fast path activated: skipping C++ compilation and heavy caches!"
+            "skip_cpp_build=true" >> $env:GITHUB_OUTPUT
+          }
+
       - name: Restore ThirdParty libraries from Release
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         id: libs_release
         shell: pwsh
         env:
@@ -128,7 +185,7 @@ jobs:
           exit 0
 
       - name: Restore ThirdParty libraries (Actions Cache fallback)
-        if: env.LIBS_CACHE_HIT != 'true'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && env.LIBS_CACHE_HIT != 'true'
         id: libs
         uses: actions/cache/restore@v4
         with:
@@ -140,13 +197,14 @@ jobs:
             win-libs-v3-
 
       - name: Update LIBS_CACHE_HIT from fallback
-        if: env.LIBS_CACHE_HIT != 'true' && steps.libs.outputs.cache-hit == 'true'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && env.LIBS_CACHE_HIT != 'true' && steps.libs.outputs.cache-hit == 'true'
         shell: pwsh
         run: |
           "LIBS_CACHE_HIT=true" >> $env:GITHUB_ENV
           "LIBS_SOURCE=cache" >> $env:GITHUB_ENV
 
       - name: Install ATL for Breakpad
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         shell: pwsh
         env:
           LIBS_CACHE_HIT: ${{ env.LIBS_CACHE_HIT }}
@@ -182,6 +240,7 @@ jobs:
           if (-not (Test-Path $header)) { throw "ATL for 14.44 was not installed at $header." }
 
       - name: Build ThirdParty libraries
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         shell: cmd
         env:
           LIBS_CACHE_HIT: ${{ env.LIBS_CACHE_HIT }}
@@ -197,6 +256,7 @@ jobs:
           tdesktop\Telegram\build\prepare\win.bat silent
 
       - name: Remove temporary Qt build tree
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         shell: pwsh
         run: |
           $libraryRoot = Join-Path $env:GITHUB_WORKSPACE 'Libraries\win64'
@@ -208,7 +268,7 @@ jobs:
           }
 
       - name: Publish ThirdParty libraries to Release (one-time)
-        if: success() && env.LIBS_SOURCE != 'release'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && success() && env.LIBS_SOURCE != 'release'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -239,6 +299,7 @@ jobs:
       # Plugin engine links against an embedded Python 3.11, expected at
       # Libraries/win64/python311 with include/, libs/python311.lib and embed/.
       - name: Restore embedded Python 3.11 cache
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         id: cache-python311
         uses: actions/cache@v4
         with:
@@ -246,7 +307,7 @@ jobs:
           key: win64-python-3.11.9-embed-headers-v1
 
       - name: Fetch embedded Python 3.11
-        if: steps.cache-python311.outputs.cache-hit != 'true'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && steps.cache-python311.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $dest = Join-Path $env:GITHUB_WORKSPACE "Libraries\win64\python311"
@@ -268,6 +329,7 @@ jobs:
           }
 
       - name: Restore Compiler cache (sccache)
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         uses: actions/cache/restore@v4
         with:
           path: .sccache
@@ -277,6 +339,7 @@ jobs:
             win64-sccache-v3-
 
       - name: Check restored sccache size
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         shell: pwsh
         run: |
           $sizeMb = 0
@@ -288,6 +351,7 @@ jobs:
           Write-Host "Restored sccache size: $sizeMb MB"
 
       - name: Enable sccache
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         id: sccache
         uses: mozilla-actions/sccache-action@v0.0.11
 
@@ -311,6 +375,7 @@ jobs:
         run: cd /d %GITHUB_WORKSPACE%\tdesktop && python tools\sync_version.py
 
       - name: Restore out build tree from Release (4 volumes)
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         id: restore_out_cache
         continue-on-error: true
         shell: pwsh
@@ -338,45 +403,6 @@ jobs:
           }
           Write-Host "No out cache volumes found in ci-cache, starting fresh build."
           "OUT_CACHE_HIT=false" >> $env:GITHUB_ENV
-
-      - name: Check for C++ core changes
-        id: diff_check
-        working-directory: tdesktop
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          $needBuild = $true
-          try {
-            $lastRuns = gh run list --workflow="Windows build" --status=success --limit=1 -R "$env:GH_REPO" --json databaseId,headSha | ConvertFrom-Json
-            if ($lastRuns -and $lastRuns.Count -gt 0) {
-              $lastSha = $lastRuns[0].headSha
-              $lastRunId = $lastRuns[0].databaseId
-              Write-Host "Last successful build: Run ID $lastRunId @ $lastSha"
-              git fetch --depth=20 origin main 2>$null
-              $diff = git diff --name-only "$lastSha" HEAD -- Telegram/SourceFiles/ cmake/ CMakeLists.txt
-              if (-not $diff) {
-                Write-Host "No C++ core changes detected between $lastSha and HEAD!"
-                $releaseDir = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\out\Release'
-                if (Test-Path (Join-Path $releaseDir 'Telegram.exe') -or (Test-Path (Join-Path $releaseDir 'oxDesktop.exe'))) {
-                  Write-Host "Telegram.exe is present in restored out tree! Skipping full C++ compilation."
-                  $needBuild = $false
-                } else {
-                  Write-Host "Telegram.exe not present in out tree, building..."
-                }
-              } else {
-                Write-Host "C++ core files changed ($($diff.Count) files). Running full compilation."
-              }
-            }
-          } catch {
-            Write-Host "Diff check warning: $_"
-          }
-          if ($needBuild) {
-            "skip_cpp_build=false" >> $env:GITHUB_OUTPUT
-          } else {
-            "skip_cpp_build=true" >> $env:GITHUB_OUTPUT
-          }
 
       - name: Configure and build
         id: build
@@ -408,7 +434,7 @@ jobs:
           cmake --build . --config Release --target Telegram --parallel
 
       - name: Report sccache statistics and flush
-        if: always() && steps.sccache.outcome == 'success'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && always() && steps.sccache.outcome == 'success'
         continue-on-error: true
         shell: pwsh
         run: |
@@ -421,7 +447,7 @@ jobs:
 
       - name: Validate sccache size before save
         id: check_sccache
-        if: always()
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && always()
         shell: pwsh
         run: |
           $currentMb = 0
@@ -441,7 +467,7 @@ jobs:
           }
 
       - name: Save Compiler cache (sccache)
-        if: always() && steps.check_sccache.outputs.should_save == 'true'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && always() && steps.check_sccache.outputs.should_save == 'true'
         uses: actions/cache/save@v4
         with:
           path: .sccache
@@ -479,9 +505,15 @@ jobs:
             Copy-Item $rustBin (Join-Path $release 'oxWsProxy.exe') -Force
             Copy-Item $rustBin (Join-Path $portable 'oxWsProxy.exe') -Force
           }
-          Copy-Item (Join-Path $release 'python') $portable -Recurse
-          Copy-Item (Join-Path $release 'modules') $portable -Recurse
-          if (Test-Path (Join-Path $release 'Updater.exe')) { Copy-Item (Join-Path $release 'Updater.exe') $portable }
+          $pythonSrc = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\Telegram\SourceFiles\extera\python'
+          if (Test-Path $pythonSrc) {
+            $targetPyRel = Join-Path $release 'python\extera'
+            New-Item -ItemType Directory -Path $targetPyRel -Force | Out-Null
+            Copy-Item (Join-Path $pythonSrc '*') $targetPyRel -Recurse -Force
+          }
+          Copy-Item (Join-Path $release 'python') $portable -Recurse -Force
+          Copy-Item (Join-Path $release 'modules') $portable -Recurse -Force
+          if (Test-Path (Join-Path $release 'Updater.exe')) { Copy-Item (Join-Path $release 'Updater.exe') $portable -Force }
           $cl = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\changelog.txt'
           if (Test-Path $cl) {
             Copy-Item $cl $release -Force
@@ -506,7 +538,7 @@ jobs:
           "BUILD_VERSION=$packageVersion" >> $env:GITHUB_ENV
 
       - name: Prune older sccache entries
-        if: always()
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && always()
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}

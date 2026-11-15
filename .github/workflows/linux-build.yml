@@ -47,7 +47,53 @@ jobs:
       - name: Checkout submodules (shallow & parallel)
         run: git submodule update --init --recursive --depth 1 --jobs 8
 
+      - name: Check for C++ core changes
+        id: diff_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          NEED_BUILD=true
+          LAST_RUN=$(gh run list --workflow="Linux build" --status=success --limit=1 -R "$GH_REPO" --json databaseId,headSha --jq '.[0]' 2>/dev/null || echo "")
+          if [ -n "$LAST_RUN" ]; then
+            LAST_SHA=$(echo "$LAST_RUN" | jq -r '.headSha')
+            LAST_ID=$(echo "$LAST_RUN" | jq -r '.databaseId')
+            echo "Last successful Linux build: Run $LAST_ID @ $LAST_SHA"
+            git fetch --depth=50 origin main 2>/dev/null || true
+            RAW_DIFF=$(git diff --name-only "$LAST_SHA" HEAD -- Telegram/SourceFiles/ Telegram/build/ docker/ cmake/ CMakeLists.txt || true)
+            CPP_DIFF=$(echo "$RAW_DIFF" | grep -v '^Telegram/SourceFiles/extera/rust/' | grep -v '^Telegram/SourceFiles/extera/python/' | grep -v '\.md$' | grep -v '^$' || true)
+            if [ -z "$CPP_DIFF" ]; then
+              echo "No C++ core changes detected between $LAST_SHA and HEAD!"
+              echo "Fetching prebuilt Linux binary from run $LAST_ID..."
+              mkdir -p temp_prev_linux
+              if gh run download "$LAST_ID" -n oxDesktop-linux-x64 --dir temp_prev_linux 2>/dev/null; then
+                TAR_FILE=$(find temp_prev_linux -name "*.tar.gz" | head -n 1)
+                if [ -n "$TAR_FILE" ]; then
+                  mkdir -p out/Release pkg
+                  tar -xzf "$TAR_FILE" -C out/Release/ || true
+                  tar -xzf "$TAR_FILE" -C pkg/ 2>/dev/null || true
+                  if [ -f "out/Release/Telegram" ] || [ -f "pkg/oxDesktop/oxDesktop-bin" ] || [ -f "out/Release/oxDesktop/oxDesktop-bin" ]; then
+                    echo "Telegram prebuilt binary restored successfully from run $LAST_ID!"
+                    NEED_BUILD=false
+                  fi
+                fi
+                rm -rf temp_prev_linux
+              fi
+            else
+              echo "C++ core files changed:"
+              echo "$CPP_DIFF"
+            fi
+          fi
+          if [ "$NEED_BUILD" = "true" ]; then
+            echo "Full C++ compilation will run."
+            echo "skip_cpp_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Fast path activated: skipping Docker C++ build and heavy caches!"
+            echo "skip_cpp_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate Dockerfile
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         run: |
           python3 -m pip install --break-system-packages poetry || pipx install poetry || (curl -sSL --retry 5 --retry-delay 3 https://install.python-poetry.org | python3 -)
           cd Telegram/build/docker/centos_env
@@ -57,14 +103,17 @@ jobs:
           rm -rf __pycache__
 
       - name: Free disk space
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: true
 
       - name: Set up Docker Buildx
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Restore Docker environment from Release
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         id: docker_release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -83,7 +132,7 @@ jobs:
           fi
 
       - name: Libraries
-        if: env.DOCKER_CACHE_HIT != 'true'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && env.DOCKER_CACHE_HIT != 'true'
         uses: docker/build-push-action@v6
         with:
           context: Telegram/build/docker/centos_env
@@ -92,7 +141,7 @@ jobs:
           cache-from: type=gha,scope=docker-centos
 
       - name: Publish Docker environment to Release (one-time)
-        if: success() && env.DOCKER_CACHE_HIT != 'true'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && success() && env.DOCKER_CACHE_HIT != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -110,6 +159,7 @@ jobs:
           rm -f "$ARCHIVE"
 
       - name: Restore Compiler cache (ccache)
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         uses: actions/cache/restore@v4
         with:
           path: .ccache
@@ -119,6 +169,7 @@ jobs:
             ${{ runner.os }}-ccache-
 
       - name: Check restored ccache size
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         run: |
           RESTORED_MB=0
           if [ -d ".ccache" ]; then
@@ -129,47 +180,6 @@ jobs:
 
       - name: Synchronize version from version.txt
         run: python3 tools/sync_version.py
-
-      - name: Check for C++ core changes
-        id: diff_check
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          NEED_BUILD=true
-          LAST_RUN=$(gh run list --workflow="Linux build" --status=success --limit=1 -R "$GH_REPO" --json databaseId,headSha --jq '.[0]' 2>/dev/null || echo "")
-          if [ -n "$LAST_RUN" ]; then
-            LAST_SHA=$(echo "$LAST_RUN" | jq -r '.headSha')
-            LAST_ID=$(echo "$LAST_RUN" | jq -r '.databaseId')
-            echo "Last successful Linux build: Run $LAST_ID @ $LAST_SHA"
-            git fetch --depth=20 origin main 2>/dev/null || true
-            DIFF=$(git diff --name-only "$LAST_SHA" HEAD -- Telegram/SourceFiles/ Telegram/build/ docker/ cmake/ CMakeLists.txt || true)
-            if [ -z "$DIFF" ]; then
-              echo "No C++ core changes detected between $LAST_SHA and HEAD!"
-              if [ ! -f "out/Release/Telegram" ]; then
-                echo "Fetching prebuilt Linux binary from run $LAST_ID..."
-                mkdir -p temp_prev_linux
-                if gh run download "$LAST_ID" -n oxDesktop-linux-x64 --dir temp_prev_linux 2>/dev/null; then
-                  TAR_FILE=$(find temp_prev_linux -name "*.tar.gz" | head -n 1)
-                  if [ -n "$TAR_FILE" ]; then
-                    mkdir -p out/Release
-                    tar -xzf "$TAR_FILE" -C out/Release/ || true
-                  fi
-                fi
-              fi
-              if [ -f "out/Release/Telegram" ]; then
-                echo "Telegram binary is present and up to date! Skipping Docker C++ build."
-                NEED_BUILD=false
-              fi
-            else
-              echo "C++ core files changed. Full compilation required."
-            fi
-          fi
-          if [ "$NEED_BUILD" = "true" ]; then
-            echo "skip_cpp_build=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip_cpp_build=true" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Build
         if: steps.diff_check.outputs.skip_cpp_build != 'true'
@@ -205,7 +215,7 @@ jobs:
 
       - name: Validate ccache size before save
         id: check_ccache
-        if: always()
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && always()
         run: |
           CURRENT_MB=0
           if [ -d ".ccache" ]; then
@@ -223,14 +233,14 @@ jobs:
           fi
 
       - name: Save Compiler cache (ccache)
-        if: always() && steps.check_ccache.outputs.should_save == 'true'
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && always() && steps.check_ccache.outputs.should_save == 'true'
         uses: actions/cache/save@v4
         with:
           path: .ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}-${{ github.run_id }}
 
       - name: Prune older ccache entries
-        if: always()
+        if: steps.diff_check.outputs.skip_cpp_build != 'true' && always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -260,41 +270,54 @@ jobs:
             VERSION="${GITHUB_REF_NAME#v}"
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          docker run --rm \
-            -u "$(id -u)" \
-            -v "$PWD:/usr/src/tdesktop" \
-            -e VERSION="$VERSION" \
-            "$IMAGE_TAG" \
-            bash -euo pipefail -c '
-              cd /usr/src/tdesktop
-              PKG="pkg/oxDesktop"
-              rm -rf pkg
-              mkdir -p "$PKG/lib" "$PKG/python" "$PKG/python311/lib"
-              cp out/Release/Telegram "$PKG/oxDesktop-bin"
-              strip "$PKG/oxDesktop-bin"
-              if [ -f Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy ]; then
-                cp Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy "$PKG/oxWsProxy"
-                chmod +x "$PKG/oxWsProxy"
-              fi
-              cp -L /usr/lib64/libpython3.11.so.1.0 "$PKG/lib/"
-              cp -r /usr/lib64/python3.11 "$PKG/python311/lib/python3.11"
-              rm -rf "$PKG/python311/lib/python3.11/test" \
-                "$PKG/python311/lib/python3.11/site-packages"
-              find "$PKG/python311" -name "__pycache__" -type d -prune -exec rm -rf {} +
-              ln -sf lib "$PKG/python311/lib64"
-              mkdir -p "$PKG/python/extera"
-              cp -r Telegram/SourceFiles/extera/python/. "$PKG/python/extera/"
-              cat > "$PKG/oxDesktop" <<SH
-          #!/bin/sh
-          DIR="\$(cd "\$(dirname "\$0")" && pwd)"
-          export LD_LIBRARY_PATH="\$DIR/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
-          export PYTHONHOME="\$DIR/python311"
-          export PYTHONPATH="\$DIR/python311/lib/python3.11:\$DIR/python311/lib/python3.11/lib-dynload"
-          exec "\$DIR/oxDesktop-bin" "\$@"
-          SH
-              chmod +x "$PKG/oxDesktop" "$PKG/oxDesktop-bin"
-              GZIP="-9" tar -C pkg -czf "oxDesktop-linux-x64.$VERSION.tar.gz" oxDesktop
-            '
+          if [ "${{ steps.diff_check.outputs.skip_cpp_build }}" = "true" ] && [ -d "pkg/oxDesktop" ]; then
+            echo "Fast packaging without Docker..."
+            PKG="pkg/oxDesktop"
+            if [ -f Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy ]; then
+              cp Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy "$PKG/oxWsProxy"
+              chmod +x "$PKG/oxWsProxy"
+            fi
+            mkdir -p "$PKG/python/extera"
+            cp -r Telegram/SourceFiles/extera/python/. "$PKG/python/extera/"
+            chmod +x "$PKG/oxDesktop" "$PKG/oxDesktop-bin" 2>/dev/null || true
+            GZIP="-9" tar -C pkg -czf "oxDesktop-linux-x64.$VERSION.tar.gz" oxDesktop
+          else
+            docker run --rm \
+              -u "$(id -u)" \
+              -v "$PWD:/usr/src/tdesktop" \
+              -e VERSION="$VERSION" \
+              "$IMAGE_TAG" \
+              bash -euo pipefail -c '
+                cd /usr/src/tdesktop
+                PKG="pkg/oxDesktop"
+                rm -rf pkg
+                mkdir -p "$PKG/lib" "$PKG/python" "$PKG/python311/lib"
+                cp out/Release/Telegram "$PKG/oxDesktop-bin"
+                strip "$PKG/oxDesktop-bin"
+                if [ -f Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy ]; then
+                  cp Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy "$PKG/oxWsProxy"
+                  chmod +x "$PKG/oxWsProxy"
+                fi
+                cp -L /usr/lib64/libpython3.11.so.1.0 "$PKG/lib/"
+                cp -r /usr/lib64/python3.11 "$PKG/python311/lib/python3.11"
+                rm -rf "$PKG/python311/lib/python3.11/test" \
+                  "$PKG/python311/lib/python3.11/site-packages"
+                find "$PKG/python311" -name "__pycache__" -type d -prune -exec rm -rf {} +
+                ln -sf lib "$PKG/python311/lib64"
+                mkdir -p "$PKG/python/extera"
+                cp -r Telegram/SourceFiles/extera/python/. "$PKG/python/extera/"
+                cat > "$PKG/oxDesktop" <<SH
+            #!/bin/sh
+            DIR="\$(cd "\$(dirname "\$0")" && pwd)"
+            export LD_LIBRARY_PATH="\$DIR/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+            export PYTHONHOME="\$DIR/python311"
+            export PYTHONPATH="\$DIR/python311/lib/python3.11:\$DIR/python311/lib/python3.11/lib-dynload"
+            exec "\$DIR/oxDesktop-bin" "\$@"
+            SH
+                chmod +x "$PKG/oxDesktop" "$PKG/oxDesktop-bin"
+                GZIP="-9" tar -C pkg -czf "oxDesktop-linux-x64.$VERSION.tar.gz" oxDesktop
+              '
+          fi
           ls -la "oxDesktop-linux-x64.$VERSION.tar.gz"
 
       - name: Upload artifact
