@@ -369,9 +369,19 @@ jobs:
         shell: pwsh
         run: |
           $release = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\out\Release'
-          $versionHeader = Get-Content 'tdesktop\Telegram\SourceFiles\core\version.h' -Raw
-          if ($versionHeader -notmatch 'AppVersionStr\s*=\s*"([^"]+)"') { throw 'AppVersionStr was not found' }
-          $version = $Matches[1]
+          $version = '7.4.3.3'
+          if (Test-Path 'tdesktop\version.txt') {
+            $version = (Get-Content 'tdesktop\version.txt' -Raw).Trim()
+          } elseif (Test-Path 'version.txt') {
+            $version = (Get-Content 'version.txt' -Raw).Trim()
+          } elseif (Test-Path 'tdesktop\Telegram\SourceFiles\core\version.h') {
+            $versionHeader = Get-Content 'tdesktop\Telegram\SourceFiles\core\version.h' -Raw
+            if ($versionHeader -match 'APP_VERSION\s*"([^"]+)"') {
+              $version = $Matches[1]
+            } elseif ($versionHeader -match 'AppVersionStr\s*=\s*"([^"]+)"') {
+              $version = $Matches[1]
+            }
+          }
           $packageVersion = $version
           if ($env:GITHUB_EVENT_NAME -eq 'release') { $packageVersion = $env:GITHUB_REF_NAME.TrimStart('v') }
           $portable = Join-Path $env:GITHUB_WORKSPACE 'oxDesktop-windows-x64'

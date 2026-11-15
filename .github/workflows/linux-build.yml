@@ -204,7 +204,16 @@ jobs:
 
       - name: Package
         run: |
-          VERSION=$(sed -n 's/.*AppVersionStr = "\([^"]*\)".*/\1/p' Telegram/SourceFiles/core/version.h)
+          if [ -f version.txt ]; then
+            VERSION=$(cat version.txt | tr -d ' \t\r\n')
+          elif [ -f Telegram/SourceFiles/core/version.h ]; then
+            VERSION=$(sed -n 's/.*APP_VERSION "\([^"]*\)".*/\1/p' Telegram/SourceFiles/core/version.h)
+          else
+            VERSION="7.4.3.3"
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION="7.4.3.3"
+          fi
           if [ "$GITHUB_EVENT_NAME" = "release" ]; then
             VERSION="${GITHUB_REF_NAME#v}"
           fi
