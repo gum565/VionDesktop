@@ -130,7 +130,49 @@ jobs:
       - name: Synchronize version from version.txt
         run: python3 tools/sync_version.py
 
+      - name: Check for C++ core changes
+        id: diff_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          NEED_BUILD=true
+          LAST_RUN=$(gh run list --workflow="Linux build" --status=success --limit=1 -R "$GH_REPO" --json databaseId,headSha --jq '.[0]' 2>/dev/null || echo "")
+          if [ -n "$LAST_RUN" ]; then
+            LAST_SHA=$(echo "$LAST_RUN" | jq -r '.headSha')
+            LAST_ID=$(echo "$LAST_RUN" | jq -r '.databaseId')
+            echo "Last successful Linux build: Run $LAST_ID @ $LAST_SHA"
+            git fetch --depth=20 origin main 2>/dev/null || true
+            DIFF=$(git diff --name-only "$LAST_SHA" HEAD -- Telegram/SourceFiles/ Telegram/build/ docker/ cmake/ CMakeLists.txt || true)
+            if [ -z "$DIFF" ]; then
+              echo "No C++ core changes detected between $LAST_SHA and HEAD!"
+              if [ ! -f "out/Release/Telegram" ]; then
+                echo "Fetching prebuilt Linux binary from run $LAST_ID..."
+                mkdir -p temp_prev_linux
+                if gh run download "$LAST_ID" -n oxDesktop-linux-x64 --dir temp_prev_linux 2>/dev/null; then
+                  TAR_FILE=$(find temp_prev_linux -name "*.tar.gz" | head -n 1)
+                  if [ -n "$TAR_FILE" ]; then
+                    mkdir -p out/Release
+                    tar -xzf "$TAR_FILE" -C out/Release/ || true
+                  fi
+                fi
+              fi
+              if [ -f "out/Release/Telegram" ]; then
+                echo "Telegram binary is present and up to date! Skipping Docker C++ build."
+                NEED_BUILD=false
+              fi
+            else
+              echo "C++ core files changed. Full compilation required."
+            fi
+          fi
+          if [ "$NEED_BUILD" = "true" ]; then
+            echo "skip_cpp_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip_cpp_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build
+        if: steps.diff_check.outputs.skip_cpp_build != 'true'
         env:
           API_ID: ${{ secrets.TDESKTOP_API_ID }}
           API_HASH: ${{ secrets.TDESKTOP_API_HASH }}

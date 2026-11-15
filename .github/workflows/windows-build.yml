@@ -341,33 +341,29 @@ jobs:
 
       - name: Check for C++ core changes
         id: diff_check
+        working-directory: tdesktop
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           $needBuild = $true
           try {
-            $lastRuns = gh run list --workflow="Windows build" --status=success --limit=1 --json databaseId,headSha | ConvertFrom-Json
+            $lastRuns = gh run list --workflow="Windows build" --status=success --limit=1 -R "$env:GH_REPO" --json databaseId,headSha | ConvertFrom-Json
             if ($lastRuns -and $lastRuns.Count -gt 0) {
               $lastSha = $lastRuns[0].headSha
               $lastRunId = $lastRuns[0].databaseId
               Write-Host "Last successful build: Run ID $lastRunId @ $lastSha"
-              $diff = git diff --name-only "$lastSha" HEAD -- tdesktop/Telegram/SourceFiles/ tdesktop/cmake/ tdesktop/CMakeLists.txt
+              git fetch --depth=20 origin main 2>$null
+              $diff = git diff --name-only "$lastSha" HEAD -- Telegram/SourceFiles/ cmake/ CMakeLists.txt
               if (-not $diff) {
                 Write-Host "No C++ core changes detected between $lastSha and HEAD!"
-                $releaseDir = 'tdesktop\out\Release'
-                if (-not (Test-Path "$releaseDir\Telegram.exe")) {
-                  Write-Host "Fetching Telegram.exe from previous run $lastRunId..."
-                  New-Item -ItemType Directory -Path temp_prev_installer -Force | Out-Null
-                  gh run download "$lastRunId" -n oxDesktop-windows-installer --dir temp_prev_installer
-                  $inst = Get-ChildItem -Path temp_prev_installer -Filter "oxDesktop-setup-x64.*.exe" | Select-Object -First 1
-                  if ($inst) {
-                    Write-Host "Previous installer found."
-                  }
-                }
-                if (Test-Path "$releaseDir\Telegram.exe" -or (Test-Path "$releaseDir\oxDesktop.exe")) {
-                  Write-Host "Telegram.exe is present and up to date! Skipping full C++ compilation."
+                $releaseDir = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\out\Release'
+                if (Test-Path (Join-Path $releaseDir 'Telegram.exe') -or (Test-Path (Join-Path $releaseDir 'oxDesktop.exe'))) {
+                  Write-Host "Telegram.exe is present in restored out tree! Skipping full C++ compilation."
                   $needBuild = $false
+                } else {
+                  Write-Host "Telegram.exe not present in out tree, building..."
                 }
               } else {
                 Write-Host "C++ core files changed ($($diff.Count) files). Running full compilation."
