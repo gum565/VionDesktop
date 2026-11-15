@@ -62,41 +62,10 @@ def main():
         f.write(build_version_content)
     print(f"[sync_version] Updated {build_version_path}")
 
-    # 2. Update Telegram/SourceFiles/core/version.h
-    core_version_path = os.path.join(root_dir, "Telegram", "SourceFiles", "core", "version.h")
-    if os.path.exists(core_version_path):
-        with open(core_version_path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        # Update fallback macros
-        content = re.sub(
-            r'(#define\s+APP_VERSION\s+)"[^"]*"',
-            rf'\g<1>"{version_str}"',
-            content
-        )
-        content = re.sub(
-            r'(#define\s+APP_VERSION_FULL\s+)\d+',
-            rf'\g<1>{version_full}',
-            content
-        )
-        # Update raw literals if present
-        content = re.sub(
-            r"(constexpr\s+auto\s+AppVersion\s*=\s*)\d+;",
-            rf"\g<1>{version_full};",
-            content
-        )
-        content = re.sub(
-            r'(constexpr\s+auto\s+AppVersionStr\s*=\s*)"[^"]*";',
-            rf'\g<1>"{version_str}";',
-            content
-        )
-        with open(core_version_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(content)
-        print(f"[sync_version] Updated fallback macros in {core_version_path}")
-
-    # 3. Generate Telegram/SourceFiles/version_generated.h
+    # 2. Generate Telegram/SourceFiles/version_generated.h (dynamic from version.txt)
     gen_header_path = os.path.join(root_dir, "Telegram", "SourceFiles", "version_generated.h")
     gen_content = (
+        "// THIS FILE IS AUTO-GENERATED FROM version.txt. DO NOT EDIT DIRECTLY!\n"
         "#pragma once\n"
         f'#define APP_VERSION "{version_str}"\n'
         f'#define APP_VERSION_FULL {version_full}\n'

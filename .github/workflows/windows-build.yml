@@ -161,6 +161,15 @@ jobs:
                           Write-Host "Compiled genuine Qt plugin init for: $pluginName -> $relPath"
                           $compiledPlugin = $true
                         }
+                      } elseif ($cl -and ($relPath -match 'qrc_([A-Za-z0-9_]+)_init')) {
+                        $rscName = $Matches[1]
+                        $tempCpp = Join-Path $env:TEMP "qrc_$rscName`_init.cpp"
+                        Set-Content -Path $tempCpp -Value "extern int qInitResources_$rscName();`r`nnamespace { struct Init_$rscName { Init_$rscName() { qInitResources_$rscName(); } }; static const Init_$rscName init_$rscName; }`r`n"
+                        & $cl.FullName /c /nologo /O2 /MD /EHsc /std:c++17 /Fo$fullPath $tempCpp | Out-Null
+                        if ($LASTEXITCODE -eq 0 -and (Test-Path $fullPath)) {
+                          Write-Host "Compiled genuine Qt resource init for: $rscName -> $relPath"
+                          $compiledPlugin = $true
+                        }
                       }
                       if (-not $compiledPlugin) {
                         if (Test-Path $dummyObj) {

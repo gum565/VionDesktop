@@ -13,14 +13,16 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "version_generated.h"
 #elif __has_include("../version_generated.h")
 #include "../version_generated.h"
+#elif __has_include("../../version_generated.h")
+#include "../../version_generated.h"
 #endif
 
 #ifndef APP_VERSION
-#define APP_VERSION "7.4.3.3"
+#error "APP_VERSION is not defined. Ensure version_generated.h is generated from version.txt"
 #endif
 
 #ifndef APP_VERSION_FULL
-#define APP_VERSION_FULL 7004003
+#error "APP_VERSION_FULL is not defined. Ensure version_generated.h is generated from version.txt"
 #endif
 
 #define TDESKTOP_REQUESTED_ALPHA_VERSION (0ULL)

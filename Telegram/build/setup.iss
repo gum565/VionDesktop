@@ -31,8 +31,8 @@ DisableStartupPrompt=yes
 PrivilegesRequired=lowest
 VersionInfoVersion={#MyAppVersion}.0
 CloseApplications=force
-DisableDirPage=no
-DisableProgramGroupPage=no
+DisableDirPage=auto
+DisableProgramGroupPage=auto
 WizardStyle=modern
 #ifndef SkipSign
 SignTool=sha256
@@ -198,7 +198,9 @@ begin
     HasOldLnk := FileExists(CommonDesktopLnk) and (UserDesktopLnk <> CommonDesktopLnk);
     if (HasOldKey and HasNewKey) or (HasOldLnk and HasNewLnk) then
     begin
-      if (GetWindowsVersion >= $06000000) then // Vista or later
+      if WizardSilent then
+        ShellExec('', ExpandConstant('{app}\{#MyAppExeName}'), '-fixprevious', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+      else if (GetWindowsVersion >= $06000000) then // Vista or later
         ShellExec('runas', ExpandConstant('{app}\{#MyAppExeName}'), '-fixprevious', '', SW_SHOW, ewWaitUntilTerminated, ResultCode)
       else
         ShellExec('', ExpandConstant('{app}\{#MyAppExeName}'), '-fixprevious', '', SW_SHOW, ewWaitUntilTerminated, ResultCode);

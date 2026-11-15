@@ -41,11 +41,18 @@ jobs:
       - name: Determine Version and Tag
         id: meta
         run: |
-          VERSION=$(cat version.txt | tr -d '\r\n ')
-          if [ -z "$VERSION" ]; then
-            VERSION="7.4.3.3"
+          VERSION=""
+          if [ -f version.txt ]; then
+            VERSION=$(cat version.txt | tr -d '\r\n ')
           fi
           TAG="${{ github.event.inputs.tag_name }}"
+          if [ -z "$VERSION" ] && [ -n "$TAG" ]; then
+            VERSION="${TAG#v}"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Error: version.txt is missing or empty, and tag_name was not provided."
+            exit 1
+          fi
           if [ -z "$TAG" ]; then
             TAG="v$VERSION"
           fi

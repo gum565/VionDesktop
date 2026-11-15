@@ -62,10 +62,10 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Telegram FZ-LLC"
             VALUE "FileDescription", "oxDesktop"
-            VALUE "FileVersion", "7.4.3.3"
+            VALUE "FileVersion", "7.4.3.3.1"
             VALUE "LegalCopyright", "Copyright (C) 2014-2026"
             VALUE "ProductName", "oxDesktop"
-            VALUE "ProductVersion", "7.4.3.3"
+            VALUE "ProductVersion", "7.4.3.3.1"
         END
     END
     BLOCK "VarFileInfo"
