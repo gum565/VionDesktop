@@ -539,8 +539,9 @@ async fn handle_client(
 
     // 3. Fallback to Cloudflare workers if direct fails
     if ws_stream.is_none() {
+        let primary_ip = ips[0];
         for cf_domain in cf_domains.iter() {
-            let cf_url = format!("wss://{}/apiws?dst={}&dc={}", cf_domain, ip, actual_dc);
+            let cf_url = format!("wss://{}/apiws?dst={}&dc={}", cf_domain, primary_ip, actual_dc);
             match tokio::time::timeout(
                 Duration::from_secs(4),
                 tokio_tungstenite::connect_async(&cf_url),
@@ -624,11 +625,7 @@ async fn handle_client(
                 }
                 return;
             }
-            _ => {
-                logger.warn(&format!("[{}] TCP fallback failed to connect to {}:443", peer, ip)).await;
-            }
         }
-    }
 
     let mut ws = match ws_stream {
         Some(w) => w,
