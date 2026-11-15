@@ -29,24 +29,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Copy button for code blocks
+  // Copy button & clean container for code blocks
   document.querySelectorAll('pre').forEach(pre => {
     const code = pre.querySelector('code');
     if (!code) return;
 
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-block-wrapper';
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(pre);
+
     const header = document.createElement('div');
     header.className = 'code-header';
-    const lang = code.className.replace('language-', '') || 'code';
-    header.innerHTML = `<span>${lang}</span><button class="btn-copy">Копировать</button>`;
-    pre.insertBefore(header, code);
+    let lang = 'code';
+    for (const c of code.classList) {
+      if (c.startsWith('language-')) {
+        lang = c.replace('language-', '');
+        break;
+      }
+    }
+    header.innerHTML = `<span>${lang}</span><button class="btn-copy"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12V1Z"/></svg><span>Копировать</span></button>`;
+    wrapper.insertBefore(header, pre);
 
     const btn = header.querySelector('.btn-copy');
+    const label = btn.querySelector('span');
     btn.addEventListener('click', () => {
       navigator.clipboard.writeText(code.innerText).then(() => {
-        btn.innerText = 'Скопировано!';
-        setTimeout(() => { btn.innerText = 'Копировать'; }, 2000);
+        btn.classList.add('copied');
+        label.innerText = 'Скопировано!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          label.innerText = 'Копировать';
+        }, 2000);
       });
     });
+  });
+
+  // Ensure all tables are wrapped in a responsive scroll container
+  document.querySelectorAll('table').forEach(table => {
+    if (!table.parentElement.classList.contains('table-container')) {
+      const container = document.createElement('div');
+      container.className = 'table-container';
+      table.parentNode.insertBefore(container, table);
+      container.appendChild(table);
+    }
   });
 
   // Client-side search filter in sidebar
