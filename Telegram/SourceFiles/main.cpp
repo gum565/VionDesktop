@@ -15,6 +15,8 @@ extern "C" {
 #include <QtPlugin>
 #include <QtCore/QDir>
 Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+Q_IMPORT_PLUGIN(QSchannelBackendPlugin)
+Q_IMPORT_PLUGIN(QNLMNIPlugin)
 Q_IMPORT_PLUGIN(QWebpPlugin)
 Q_IMPORT_PLUGIN(QJpegPlugin)
 Q_IMPORT_PLUGIN(QGifPlugin)

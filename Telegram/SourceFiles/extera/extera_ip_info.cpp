@@ -43,7 +43,7 @@ QString ExtractIp(const QString &text) {
 	if (match.hasMatch()) {
 		return match.captured(0);
 	}
-	return text.trimmed();
+	return QString();
 }
 
 void Inspect(
@@ -55,6 +55,77 @@ void Inspect(
 	}
 
 	static auto *manager = new QNetworkAccessManager(qApp);
+
+	const auto showFailBox = [=] {
+		controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+			box->setTitle(rpl::single(u"IP: "_q + cleanIp));
+			box->addRow(object_ptr<Ui::FlatLabel>(
+				box,
+				u"Не удалось получить GeoIP информацию."_q,
+				st::boxLabel));
+			box->addButton(rpl::single(u"Закрыть"_q), [=] { box->closeBox(); });
+		}));
+	};
+
+	const auto tryFallback = [=] {
+		const auto reqFallback = QNetworkRequest(QUrl(
+			u"http://ip-api.com/json/%1"_q.arg(cleanIp)));
+		const auto replyFallback = manager->get(reqFallback);
+		QObject::connect(replyFallback, &QNetworkReply::finished, [=] {
+			replyFallback->deleteLater();
+			if (replyFallback->error() != QNetworkReply::NoError) {
+				showFailBox();
+				return;
+			}
+			const auto doc = QJsonDocument::fromJson(replyFallback->readAll());
+			if (!doc.isObject()) {
+				showFailBox();
+				return;
+			}
+			const auto obj = doc.object();
+			if (obj.value(u"status"_q).toString() != u"success"_q) {
+				showFailBox();
+				return;
+			}
+			const auto country = obj.value(u"country"_q).toString();
+			const auto code = obj.value(u"countryCode"_q).toString();
+			const auto city = obj.value(u"city"_q).toString();
+			const auto region = obj.value(u"regionName"_q).toString();
+			const auto isp = obj.value(u"isp"_q).toString();
+			const auto org = obj.value(u"org"_q).toString();
+			const auto as = obj.value(u"as"_q).toString();
+			const auto flag = CountryFlag(code);
+
+			controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+				const auto header = flag.isEmpty()
+					? QString("%1 (%2)").arg(country).arg(code)
+					: QString("%1 %2 (%3)").arg(flag).arg(country).arg(code);
+				box->setTitle(rpl::single(header));
+
+				auto details = QString();
+				details.append(u"IP: "_q + cleanIp + '\n');
+				if (!city.isEmpty() || !region.isEmpty()) {
+					details.append(u"Location: "_q + city + u", "_q + region + '\n');
+				}
+				if (!isp.isEmpty()) {
+					details.append(u"ISP: "_q + isp + '\n');
+				}
+				if (!org.isEmpty() && org != isp) {
+					details.append(u"Organization: "_q + org + '\n');
+				}
+				if (!as.isEmpty()) {
+					details.append(as + '\n');
+				}
+				const auto label = box->addRow(object_ptr<Ui::FlatLabel>(
+					box,
+					details.trimmed(),
+					st::boxLabel));
+				label->setSelectable(true);
+				box->addButton(rpl::single(u"Закрыть"_q), [=] { box->closeBox(); });
+			}));
+		});
+	};
+
 	const auto request = QNetworkRequest(QUrl(
 		u"https://ipwho.is/%1"_q.arg(cleanIp)));
 	const auto reply = manager->get(request);
@@ -62,14 +133,7 @@ void Inspect(
 	QObject::connect(reply, &QNetworkReply::finished, [=] {
 		reply->deleteLater();
 		if (reply->error() != QNetworkReply::NoError) {
-			controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-				box->setTitle(rpl::single(u"IP: "_q + cleanIp));
-				box->addRow(object_ptr<Ui::FlatLabel>(
-					box,
-					u"Failed to fetch GeoIP information."_q,
-					st::boxLabel));
-				box->addButton(rpl::single(u"Close"_q), [=] { box->closeBox(); });
-			}));
+			tryFallback();
 			return;
 		}
 

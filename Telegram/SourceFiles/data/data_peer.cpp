@@ -9,6 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "extera/extera_utils.h"
 #include "extera/extera_config.h"
 #include "extera/extera_streamer.h"
+#include "extera/extera_app_icon.h"
 
 #include "api/api_sensitive_content.h"
 #include "data/data_user.h"
@@ -448,7 +449,7 @@ void PeerData::paintUserpic(
 	}
 	const auto size = context.size;
 	if (id == kServiceNotificationsId) {
-		const auto &logo = Window::Logo();
+		const auto logo = Extera::AppIcon::Render(size, QString(), false);
 		auto hq = PainterHighQualityEnabler(p);
 		auto path = QPainterPath();
 		path.addEllipse(QRectF(context.position, QSizeF(size, size)));
@@ -532,11 +533,7 @@ QImage PeerData::GenerateUserpicImage(
 		int size,
 		std::optional<int> radius) {
 	if (peer->id == kServiceNotificationsId) {
-		const auto &logo = Window::Logo();
-		auto image = logo.scaled(
-			{ size, size },
-			Qt::IgnoreAspectRatio,
-			Qt::SmoothTransformation);
+		auto image = Extera::AppIcon::Render(size, QString(), false);
 		if (radius == 0) {
 			return image;
 		} else if (radius) {

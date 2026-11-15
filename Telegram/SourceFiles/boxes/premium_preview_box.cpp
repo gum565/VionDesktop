@@ -1243,9 +1243,10 @@ void PreviewBox(
 	} else {
 		box->setStyle(st::premiumPreviewBox);
 		const auto buttonPadding = st::premiumPreviewBox.buttonPadding;
-		const auto width = size.width()
+		const auto rawWidth = size.width()
 			- buttonPadding.left()
 			- buttonPadding.right();
+		const auto width = std::min(rawWidth, 340);
 		const auto computeRef = [=] {
 			return Settings::LookupPremiumRef(state->selected.current());
 		};

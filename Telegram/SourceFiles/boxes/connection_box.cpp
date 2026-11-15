@@ -2370,8 +2370,7 @@ void ProxiesBoxController::setDeleted(int id, bool deleted) {
 	item->deleted = deleted;
 
 	if (deleted) {
-		const auto removed = _settings.removeFromList(item->data);
-		Assert(removed);
+		_settings.removeFromList(item->data);
 
 		if (item->data == _settings.selected()) {
 			_lastSelectedProxy = _settings.selected();
@@ -2449,8 +2448,7 @@ void ProxiesBoxController::replaceItemWith(
 		// order replaceItemValue() uses right below.
 		restoreItem(which->id);
 	}
-	const auto removed = _settings.removeFromList(which->data);
-	Assert(removed);
+	_settings.removeFromList(which->data);
 
 	_views.fire({ which->id });
 	_list.erase(which);

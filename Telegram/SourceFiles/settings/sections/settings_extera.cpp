@@ -861,12 +861,8 @@ void ShowBadgeInfoBox(not_null<Window::SessionController*> controller) {
 			u"Поддержка проекта"_q,
 			u"Помощь серверной инфраструктуре TgWsProxy и разработке новых функций."_q);
 
-		box->addButton(rpl::single(u"Купить стрелочку (@exteraAuthBot)"_q), [=] {
+		box->addButton(rpl::single(u"Купить стрелочку"_q), [=] {
 			UrlClickHandler::Open(u"https://t.me/exteraAuthBot/donate"_q);
-		});
-
-		box->addButton(tr::lng_close(), [=] {
-			box->closeBox();
 		});
 	}));
 }

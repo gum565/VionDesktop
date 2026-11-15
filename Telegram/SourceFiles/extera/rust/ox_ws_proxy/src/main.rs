@@ -31,15 +31,8 @@ const PROTO_TAG_SECURE: [u8; 4] = [0xdd, 0xdd, 0xdd, 0xdd];
 
 const SNI_CANDIDATES: &[&str] = &["sprinthost.ru", "vk.com", "yandex.ru"];
 
-fn get_dc_ip(dc: u8) -> &'static str {
-    match dc {
-        1 => "149.154.175.50",
-        2 => "149.154.167.220",
-        3 => "149.154.175.100",
-        4 => "149.154.167.220",
-        5 => "149.154.171.5",
-        _ => "149.154.167.220",
-    }
+fn get_dc_ip(_dc: u8) -> &'static str {
+    "149.154.167.220"
 }
 
 #[derive(Debug)]
@@ -433,7 +426,7 @@ async fn handle_client(
     let dc_idx = i16::from_le_bytes([decrypted[60], decrypted[61]]);
     let dc = dc_idx.unsigned_abs() as u8;
     let is_media = dc_idx < 0;
-    let actual_dc = if dc == 0 || dc > 5 && dc != 203 { 2 } else { dc };
+    let actual_dc = if (1..=5).contains(&dc) { dc } else { 2 };
 
     // Set up client ciphers
     let mut clt_dec =
@@ -478,7 +471,7 @@ async fn handle_client(
     'fronting: for target_host in &candidate_hosts {
         for sni in SNI_CANDIDATES {
             match tokio::time::timeout(
-                Duration::from_secs(5),
+                Duration::from_millis(2500),
                 connect_fronted_ws(ip, target_host, sni, &tls_connector),
             )
             .await

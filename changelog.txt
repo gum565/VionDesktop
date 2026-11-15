@@ -4,8 +4,24 @@ Ru:
 - Исправлен белый экран при запуске (восстановлены шейдеры Qt)
 - Исправлен тихий режим инсталлятора
 - Убран хардкод версий (синхронизация из version.txt)
+- Установлена дефолтная аватарка Aero Delta для служебного аккаунта 777000
+- Исправлена загрузка реакций, стикеров и аватарок ботов (добавлен TLS Schannel бэкенд)
+- Оптимизирован обход oxWsProxy (устранены зависания и улучшена маршрутизация DC)
+- Исправлен вылет при отключении обхода в меню «Прокси»
+- Убрано ложное предложение проверки GeoIP на tg:// ссылках и обычном тексте
+- Исправлена работа и ошибки GeoIP проверки IP
+- Убрана лишняя кнопка «Закрыть» в tg://support
+- Уменьшена и отцентрирована кнопка подключения подписки в окне промо
 
 En:
 - Fixed white screen on startup (restored Qt shaders)
 - Fixed silent installer mode
 - Removed hardcoded versions (synced from version.txt)
+- Set default Aero Delta avatar for service notifications 777000
+- Fixed reactions, stickers and bot avatars loading (enabled TLS Schannel backend)
+- Optimized oxWsProxy bypass stability (eliminated freezes and fixed DC routing)
+- Fixed crash when disabling bypass proxy in settings
+- Removed false GeoIP lookup prompt on tg:// links and regular text
+- Fixed GeoIP lookup errors with reliable fallback
+- Removed redundant Close button in tg://support
+- Reduced and centered subscription button in promo box
