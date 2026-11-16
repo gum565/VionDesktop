@@ -122,7 +122,7 @@ void Download(bool install) {
 		state.manager = new QNetworkAccessManager(qApp);
 	}
 	auto request = QNetworkRequest(QUrl(state.assetUrl));
-	request.setRawHeader("User-Agent", "oxDesktop/" APP_VERSION);
+	request.setRawHeader("User-Agent", "VionDesktop/" APP_VERSION);
 	request.setAttribute(
 		QNetworkRequest::RedirectPolicyAttribute,
 		QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -138,7 +138,7 @@ void Download(bool install) {
 		if (bytes.size() < 1024) {
 			return;
 		}
-		const auto folder = QDir::tempPath() + u"/oxDesktop/update"_q;
+		const auto folder = QDir::tempPath() + u"/VionDesktop/update"_q;
 		QDir().mkpath(folder);
 		const auto path = folder + '/' + state.assetName;
 		auto file = QFile(path);
@@ -160,9 +160,9 @@ void Check(Fn<void(CheckResult)> done = nullptr) {
 		state.manager = new QNetworkAccessManager(qApp);
 	}
 	auto request = QNetworkRequest(QUrl(
-		u"https://api.github.com/repos/nanodevmc/oxDesktop/releases/latest"_q));
+		u"https://api.github.com/repos/gum565/VionDesktop/releases/latest"_q));
 	request.setRawHeader("Accept", "application/vnd.github+json");
-	request.setRawHeader("User-Agent", "oxDesktop/" APP_VERSION);
+	request.setRawHeader("User-Agent", "VionDesktop/" APP_VERSION);
 	const auto reply = state.manager->get(request);
 	QObject::connect(reply, &QNetworkReply::finished, [=] {
 		reply->deleteLater();
@@ -289,7 +289,7 @@ void Install() {
 void OpenRelease() {
 	const auto &url = Instance().url;
 	UrlClickHandler::Open(url.isEmpty()
-		? u"https://github.com/nanodevmc/oxDesktop/releases/latest"_q
+		? u"https://github.com/gum565/VionDesktop/releases/latest"_q
 		: url);
 }
 
