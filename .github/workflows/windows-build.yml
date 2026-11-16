@@ -85,14 +85,14 @@ jobs:
                 Write-Host "Fetching previous portable artifact from run $lastRunId..."
                 $tempDir = Join-Path $env:GITHUB_WORKSPACE 'temp_prev_portable'
                 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-                gh run download "$lastRunId" -n oxDesktop-windows-portable --dir $tempDir -R "$env:GH_REPO"
+                gh run download "$lastRunId" -n VionDesktop-windows-portable --dir $tempDir -R "$env:GH_REPO"
                 $zip = Get-ChildItem -Path $tempDir -Filter "*.zip" | Select-Object -First 1
                 if ($zip) {
                   $releaseDir = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\out\Release'
                   New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
                   Expand-Archive -Path $zip.FullName -DestinationPath $releaseDir -Force
-                  if (Test-Path (Join-Path $releaseDir 'oxDesktop.exe')) {
-                    Copy-Item (Join-Path $releaseDir 'oxDesktop.exe') (Join-Path $releaseDir 'Telegram.exe') -Force
+                  if (Test-Path (Join-Path $releaseDir 'VionDesktop.exe')) {
+                    Copy-Item (Join-Path $releaseDir 'VionDesktop.exe') (Join-Path $releaseDir 'Telegram.exe') -Force
                     Write-Host "Restored prebuilt Windows binaries successfully from run $lastRunId!"
                     $needBuild = $false
                   }
@@ -122,7 +122,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          $archive = "oxDesktop-ThirdParty-win64.7z"
+          $archive = "VionDesktop-ThirdParty-win64.7z"
           $null = & gh release download ci-cache -R $env:GH_REPO --pattern $archive --dir . 2>&1
           $global:LASTEXITCODE = 0
           if (Test-Path $archive) {
@@ -283,7 +283,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          $archive = "oxDesktop-ThirdParty-win64.7z"
+          $archive = "VionDesktop-ThirdParty-win64.7z"
           Write-Host "Packaging prebuilt libraries to $archive with solid LZMA2 (non-destructive file exclusion list)..."
           $excludes = @('.git', '*.pdb', '*.zip', '*.tar.gz', '*.tgz', '*.7z', '*.crate')
           $excludes | Set-Content -Path 'exclude_libs.txt' -Encoding utf8
@@ -394,14 +394,14 @@ jobs:
         run: |
           try {
             $assets = & gh release view ci-cache -R $env:GH_REPO --json assets -q ".assets[].name" 2>$null
-            if ($assets -match "oxDesktop-out-win64\.7z\.") {
+            if ($assets -match "VionDesktop-out-win64\.7z\.") {
               Write-Host "Found out cache volumes in ci-cache release! Downloading..."
-              & gh release download ci-cache -R $env:GH_REPO --pattern "oxDesktop-out-win64.7z.*" --dir .
-              $firstVol = "oxDesktop-out-win64.7z.001"
+              & gh release download ci-cache -R $env:GH_REPO --pattern "VionDesktop-out-win64.7z.*" --dir .
+              $firstVol = "VionDesktop-out-win64.7z.001"
               if (Test-Path $firstVol) {
                 Write-Host "Extracting out build tree..."
                 7z x $firstVol -y | Out-Null
-                Remove-Item "oxDesktop-out-win64.7z.*" -Force -ErrorAction SilentlyContinue
+                Remove-Item "VionDesktop-out-win64.7z.*" -Force -ErrorAction SilentlyContinue
                 "OUT_CACHE_HIT=true" >> $env:GITHUB_ENV
                 Write-Host "Out build tree restored successfully."
                 exit 0
@@ -511,12 +511,12 @@ jobs:
           }
           $packageVersion = $version
           if ($env:GITHUB_EVENT_NAME -eq 'release') { $packageVersion = $env:GITHUB_REF_NAME.TrimStart('v') }
-          $portable = Join-Path $env:GITHUB_WORKSPACE 'oxDesktop-windows-x64'
+          $portable = Join-Path $env:GITHUB_WORKSPACE 'VionDesktop-windows-x64'
           New-Item -ItemType Directory -Path $portable -Force | Out-Null
           if (Test-Path (Join-Path $release 'Telegram.exe')) {
-            Copy-Item (Join-Path $release 'Telegram.exe') (Join-Path $release 'oxDesktop.exe') -Force
+            Copy-Item (Join-Path $release 'Telegram.exe') (Join-Path $release 'VionDesktop.exe') -Force
           }
-          Copy-Item (Join-Path $release 'oxDesktop.exe') (Join-Path $portable 'oxDesktop.exe') -Force
+          Copy-Item (Join-Path $release 'VionDesktop.exe') (Join-Path $portable 'VionDesktop.exe') -Force
           Write-Host "Building native Rust oxWsProxy binary..."
           cargo build --release --manifest-path tdesktop\Telegram\SourceFiles\extera\rust\ox_ws_proxy\Cargo.toml
           $rustBin = 'tdesktop\Telegram\SourceFiles\extera\rust\ox_ws_proxy\target\release\ox_ws_proxy.exe'
@@ -538,17 +538,17 @@ jobs:
             Copy-Item $cl $release -Force
             Copy-Item $cl $portable -Force
           }
-          $portableZip = "oxDesktop-portable-x64.$packageVersion.zip"
+          $portableZip = "VionDesktop-portable-x64.$packageVersion.zip"
           Compress-Archive -Path (Join-Path $portable '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE $portableZip) -Force
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           $setup = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\Telegram\build\setup.iss'
-          Get-ChildItem -Path $release -Filter "oxDesktop-setup-x64.*.exe" -ErrorAction SilentlyContinue | Remove-Item -Force
+          Get-ChildItem -Path $release -Filter "VionDesktop-setup-x64.*.exe" -ErrorAction SilentlyContinue | Remove-Item -Force
           $setupArgs = @(
             '/dSkipSign',
             "/dMyAppVersion=$version",
             "/dMyAppVersionZero=$version.0",
             "/dMyAppVersionFull=$packageVersion",
-            "/dMyOutputBaseFilename=oxDesktop-setup-x64.$packageVersion",
+            "/dMyOutputBaseFilename=VionDesktop-setup-x64.$packageVersion",
             "/dReleasePath=$release",
             '/dMyBuildTarget=win64',
             $setup
@@ -580,15 +580,15 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oxDesktop-windows-installer
-          path: tdesktop/out/Release/oxDesktop-setup-x64.${{ env.BUILD_VERSION }}.exe
+          name: VionDesktop-windows-installer
+          path: tdesktop/out/Release/VionDesktop-setup-x64.${{ env.BUILD_VERSION }}.exe
           compression-level: 9
 
       - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oxDesktop-windows-portable
-          path: oxDesktop-portable-x64.${{ env.BUILD_VERSION }}.zip
+          name: VionDesktop-windows-portable
+          path: VionDesktop-portable-x64.${{ env.BUILD_VERSION }}.zip
           compression-level: 9
 
       - name: Publish out build tree to Release (4 volumes)
@@ -602,13 +602,13 @@ jobs:
           $outDir = 'tdesktop\out'
           if (Test-Path $outDir) {
             Write-Host "Packaging out build tree into 4 volumes (~1000M each)..."
-            $archiveBase = "oxDesktop-out-win64.7z"
-            $excludes = @('*.pdb', '*.tmp', '*.log', 'Telegram.exe', 'oxDesktop.exe')
+            $archiveBase = "VionDesktop-out-win64.7z"
+            $excludes = @('*.pdb', '*.tmp', '*.log', 'Telegram.exe', 'VionDesktop.exe')
             $excludes | Set-Content -Path 'exclude_out.txt' -Encoding utf8
             7z a -v1000m -mx=3 '-xr@exclude_out.txt' $archiveBase $outDir | Out-Null
             Remove-Item 'exclude_out.txt' -Force -ErrorAction SilentlyContinue
 
-            $volumes = Get-ChildItem -Filter "oxDesktop-out-win64.7z.*" | Sort-Object Name
+            $volumes = Get-ChildItem -Filter "VionDesktop-out-win64.7z.*" | Sort-Object Name
             if ($volumes.Count -gt 0) {
               Write-Host "Uploading $($volumes.Count) volumes to ci-cache release..."
               foreach ($vol in $volumes) {
@@ -627,4 +627,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "$env:RELEASE_TAG" "oxDesktop-portable-x64.$env:BUILD_VERSION.zip" "tdesktop\out\Release\oxDesktop-setup-x64.$env:BUILD_VERSION.exe" -R "$env:GH_REPO" --clobber
+        run: gh release upload "$env:RELEASE_TAG" "VionDesktop-portable-x64.$env:BUILD_VERSION.zip" "tdesktop\out\Release\VionDesktop-setup-x64.$env:BUILD_VERSION.exe" -R "$env:GH_REPO" --clobber
