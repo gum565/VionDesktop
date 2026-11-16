@@ -12,7 +12,7 @@ on:
         required: false
         default: ''
       release_title:
-        description: 'Release Title (leave empty for "oxDesktop v<version>")'
+        description: 'Release Title (leave empty for "VionDesktop v<version>")'
         required: false
         default: ''
       draft:
@@ -58,7 +58,7 @@ jobs:
           fi
           TITLE="${{ github.event.inputs.release_title }}"
           if [ -z "$TITLE" ]; then
-            TITLE="oxDesktop $TAG"
+            TITLE="VionDesktop $TAG"
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
@@ -75,8 +75,8 @@ jobs:
           WIN_RUN=$(gh run list --workflow="Windows build" --status=success --limit=1 --json databaseId -q '.[0].databaseId')
           if [ -n "$WIN_RUN" ]; then
             echo "Latest Windows run ID: $WIN_RUN"
-            gh run download "$WIN_RUN" -n oxDesktop-windows-installer --dir release_assets/windows || true
-            gh run download "$WIN_RUN" -n oxDesktop-windows-portable --dir release_assets/windows || true
+            gh run download "$WIN_RUN" -n VionDesktop-windows-installer --dir release_assets/windows || true
+            gh run download "$WIN_RUN" -n VionDesktop-windows-portable --dir release_assets/windows || true
           else
             echo "Warning: No successful Windows run found."
           fi
@@ -85,7 +85,7 @@ jobs:
           LINUX_RUN=$(gh run list --workflow="Linux build" --status=success --limit=1 --json databaseId -q '.[0].databaseId')
           if [ -n "$LINUX_RUN" ]; then
             echo "Latest Linux run ID: $LINUX_RUN"
-            gh run download "$LINUX_RUN" -n oxDesktop-linux-x64 --dir release_assets/linux || true
+            gh run download "$LINUX_RUN" -n VionDesktop-linux-x64 --dir release_assets/linux || true
           else
             echo "Warning: No successful Linux run found."
           fi
@@ -99,7 +99,7 @@ jobs:
           if [ -f "changelog.txt" ]; then
             cat changelog.txt > release_notes.md
           else
-            echo "oxDesktop ${{ steps.meta.outputs.TAG }}" > release_notes.md
+            echo "VionDesktop ${{ steps.meta.outputs.TAG }}" > release_notes.md
           fi
 
       - name: Publish Release
