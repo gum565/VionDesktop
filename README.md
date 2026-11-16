@@ -1,12 +1,4 @@
-<p align="center">
-  <a href="https://github.com/nanodevmc/oxDesktop/stargazers"><img src="docs/banner.png" alt="Star oxDesktop on GitHub" width="100%"></a>
-</p>
-
-<p align="center">
-  <img src="docs/logo.png" width="120" alt="oxDesktop">
-</p>
-
-<h1 align="center">oxDesktop</h1>
+<h1 align="center">VionDesktop</h1>
 
 <p align="center">
   Unofficial Telegram client for Windows and Linux built from the official
@@ -16,15 +8,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/nanodevmc/oxDesktop/releases"><img src="https://img.shields.io/github/v/release/nanodevmc/oxDesktop?filter=!ci-cache*&include_prereleases&label=Release&color=da3018" alt="Release"></a>
-  <a href="https://github.com/nanodevmc/oxDesktop/releases"><img src="https://img.shields.io/github/downloads/nanodevmc/oxDesktop/latest/total?label=Downloads&color=da3018" alt="Downloads"></a>
+  <a href="https://github.com/gum565/VionDesktop/releases"><img src="https://img.shields.io/github/v/release/gum565/VionDesktop?filter=!ci-cache*&include_prereleases&label=Release&color=da3018" alt="Release"></a>
+  <a href="https://github.com/gum565/VionDesktop/releases"><img src="https://img.shields.io/github/downloads/gum565/VionDesktop/latest/total?label=Downloads&color=da3018" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-da3018" alt="License"></a>
   <br>
-  <a href="https://t.me/oxDesktop"><img src="https://img.shields.io/badge/Telegram-@oxDesktop-da3018?logo=telegram&logoColor=white" alt="Telegram"></a>
-  <a href="https://t.me/oxDesktop_Cl"><img src="https://img.shields.io/badge/Changelog-@oxDesktop__Cl-da3018?logo=telegram&logoColor=white" alt="Changelog"></a>
-  <a href="https://tiktok.com/@oxDesktop"><img src="https://img.shields.io/badge/TikTok-@oxDesktop-000000?logo=tiktok&logoColor=white" alt="TikTok"></a>
-  <a href="https://t.me/radoqi"><img src="https://img.shields.io/badge/Developer-@radoqi-2aabee?logo=telegram&logoColor=white" alt="Developer"></a>
-  <a href="https://github.com/nanodevmc/oxDesktop"><img src="https://img.shields.io/badge/GitHub-nanodevmc%2FoxDesktop-181717?logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://t.me/VionDesktop"><img src="https://img.shields.io/badge/Telegram-@VionDesktop-da3018?logo=telegram&logoColor=white" alt="Telegram"></a>
+  <a href="https://t.me/VionDesktop_Cl"><img src="https://img.shields.io/badge/Changelog-@VionDesktop__Cl-da3018?logo=telegram&logoColor=white" alt="Changelog"></a>
+  <a href="https://tiktok.com/@VionDesktop"><img src="https://img.shields.io/badge/TikTok-@VionDesktop-000000?logo=tiktok&logoColor=white" alt="TikTok"></a>
+  <a href="https://t.me/radoqi"><img src="https://img.shields.io/badge/Developer-@gum565-2aabee?logo=telegram&logoColor=white" alt="Developer"></a>
+  <a href="https://github.com/gum565/VionDesktop"><img src="https://img.shields.io/badge/GitHub-nanodevmc%2FVionDesktop-181717?logo=github&logoColor=white" alt="GitHub"></a>
 </p>
 
 <p align="center">
@@ -33,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/oxdesktop.png" width="100%" alt="oxDesktop">
+  <img src="docs/screenshots/viondesktop.png" width="100%" alt="VionDesktop">
 </p>
 
 <table>
@@ -129,23 +121,23 @@
 
 **Linux, macOS, Git Bash (WSL/MSYS):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/gum565/VionDesktop/main/install.sh | sh
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/gum565/VionDesktop/main/install.ps1 | iex
 ```
 
 ### Manual Download
 
 | Platform | File |
 |:--|:--|
-| Windows | `oxDesktop-setup-x64.*.exe` installer or `oxDesktop-portable-x64.*.zip` portable version |
-| Linux | `oxDesktop-linux-x64.*.tar.gz`, run `oxDesktop` from the archive |
-| macOS | `oxDesktop-macos-arm64.*.dmg` or `.zip` for Apple Silicon |
+| Windows | `VionDesktop-setup-x64.*.exe` installer or `VionDesktop-portable-x64.*.zip` portable version |
+| Linux | `VionDesktop-linux-x64.*.tar.gz`, run `VionDesktop` from the archive |
+| macOS | `VionDesktop-macos-arm64.*.dmg` or `.zip` for Apple Silicon |
 
-All files are available on the [releases page](https://github.com/nanodevmc/oxDesktop/releases/latest). oxDesktop installs beside Telegram Desktop and keeps its data separate.
+All files are available on the [releases page](https://github.com/gum565/VionDesktop/releases/latest). VionDesktop installs beside Telegram Desktop and keeps its data separate.
 
 ## Building
 
@@ -186,16 +178,16 @@ cmake --build build --target Telegram
 **Gentoo**
 
 ```bash
-emerge net-im/oxdesktop
+emerge net-im/viondesktop
 ```
 
 **Python plugin runtime**
 
-Copy the runtime files to `/usr/share/oxDesktop/python/extera/`, or keep them next to the binary in `python/extera/`:
+Copy the runtime files to `/usr/share/VionDesktop/python/extera/`, or keep them next to the binary in `python/extera/`:
 
 ```bash
-sudo mkdir -p /usr/share/oxDesktop/python/extera
-sudo cp -r Telegram/SourceFiles/extera/python/* /usr/share/oxDesktop/python/extera/
+sudo mkdir -p /usr/share/VionDesktop/python/extera
+sudo cp -r Telegram/SourceFiles/extera/python/* /usr/share/VionDesktop/python/extera/
 ```
 
 </details>
@@ -223,18 +215,18 @@ The `python` folder next to `Telegram.exe` is required for plugins.
 
 ## Localization
 
-Most strings follow Telegram Desktop translations. oxDesktop strings are available in English and Russian.
+Most strings follow Telegram Desktop translations. VionDesktop strings are available in English and Russian.
 
 ## Official Resources
 
-- **Telegram Channel**: [@oxDesktop](https://t.me/oxDesktop)
-- **Telegram Changelog**: [@oxDesktop_Cl](https://t.me/oxDesktop_Cl)
-- **TikTok**: [tiktok.com/@oxDesktop](https://tiktok.com/@oxDesktop)
-- **Owner / CEO / Developer**: [@radoqi](https://t.me/radoqi)
+- **Telegram Channel**: [@VionDesktop](https://t.me/VionDesktop)
+- **Telegram Changelog**: [@VionDesktop_Cl](https://t.me/VionDesktop_Cl)
+- **TikTok**: [tiktok.com/@VionDesktop](https://tiktok.com/@VionDesktop)
+- **Maintainer / Developer**: [@gum565](https://t.me/radoqi)
 
 ## Credits
 
-| Project | Use in oxDesktop |
+| Project | Use in VionDesktop |
 |:--|:--|
 | [Telegram Desktop](https://github.com/telegramdesktop/tdesktop) | Client sources |
 | [exteraGram](https://github.com/exteraSquad/exteraGram) | Features and plugin format |
@@ -243,4 +235,4 @@ Most strings follow Telegram Desktop translations. oxDesktop strings are availab
 
 ## License
 
-oxDesktop is distributed under the [GNU General Public License v3.0](LICENSE).
+VionDesktop is distributed under the [GNU General Public License v3.0](LICENSE).
