@@ -12,11 +12,11 @@
   <a href="https://github.com/gum565/VionDesktop/releases"><img src="https://img.shields.io/github/downloads/gum565/VionDesktop/latest/total?label=Загрузки&color=da3018" alt="Загрузки"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Лицензия-GPL--3.0-da3018" alt="Лицензия"></a>
   <br>
-  <a href="https://t.me/VionDesktop"><img src="https://img.shields.io/badge/Telegram-@VionDesktop-da3018?logo=telegram&logoColor=white" alt="Telegram"></a>
-  <a href="https://t.me/VionDesktop_Cl"><img src="https://img.shields.io/badge/Чейнджлог-@VionDesktop__Cl-da3018?logo=telegram&logoColor=white" alt="Чейнджлог"></a>
-  <a href="https://tiktok.com/@VionDesktop"><img src="https://img.shields.io/badge/TikTok-@VionDesktop-000000?logo=tiktok&logoColor=white" alt="TikTok"></a>
-  <a href="https://t.me/radoqi"><img src="https://img.shields.io/badge/Разработчик-@gum565-2aabee?logo=telegram&logoColor=white" alt="Разработчик"></a>
-  <a href="https://github.com/gum565/VionDesktop"><img src="https://img.shields.io/badge/GitHub-nanodevmc%2FVionDesktop-181717?logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://github.com/gum565/VionDesktop"><img src="https://img.shields.io/badge/Telegram-@VionDesktop-da3018?logo=telegram&logoColor=white" alt="Telegram"></a>
+  <a href="https://github.com/gum565/VionDesktop/commits/main"><img src="https://img.shields.io/badge/Чейнджлог-@VionDesktop__Cl-da3018?logo=telegram&logoColor=white" alt="Чейнджлог"></a>
+  <a href="https://github.com/gum565"><img src="https://img.shields.io/badge/TikTok-@VionDesktop-000000?logo=tiktok&logoColor=white" alt="TikTok"></a>
+  <a href="https://github.com/gum565"><img src="https://img.shields.io/badge/Разработчик-@gum565-2aabee?logo=telegram&logoColor=white" alt="Разработчик"></a>
+  <a href="https://github.com/gum565/VionDesktop"><img src="https://img.shields.io/badge/GitHub-gum565%2FVionDesktop-181717?logo=github&logoColor=white" alt="GitHub"></a>
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/viondesktop.png" width="100%" alt="VionDesktop">
+  <img src="docs/screenshots/oxdesktop.png" width="100%" alt="Original oxDesktop interface preview">
 </p>
 
 <table>
@@ -219,10 +219,10 @@ cmake --build out --config Release --target Telegram
 
 ## Официальные ресурсы
 
-- **Telegram-канал**: [@VionDesktop](https://t.me/VionDesktop)
-- **Канал с чейнджлогами**: [@VionDesktop_Cl](https://t.me/VionDesktop_Cl)
-- **TikTok**: [tiktok.com/@VionDesktop](https://tiktok.com/@VionDesktop)
-- **Maintainer / Developer**: [@gum565](https://t.me/radoqi)
+- **Telegram-канал**: [@VionDesktop](https://github.com/gum565/VionDesktop)
+- **Канал с чейнджлогами**: [@VionDesktop_Cl](https://github.com/gum565/VionDesktop/commits/main)
+- **TikTok**: [tiktok.com/@VionDesktop](https://github.com/gum565)
+- **Maintainer / Developer**: [@gum565](https://github.com/gum565)
 
 ## Благодарности
 
