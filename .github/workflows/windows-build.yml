@@ -532,6 +532,7 @@ jobs:
           Compress-Archive -Path (Join-Path $portable '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE $portableZip) -Force
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           $setup = Join-Path $env:GITHUB_WORKSPACE 'tdesktop\Telegram\build\setup.iss'
+          Get-ChildItem -Path $release -Filter "oxDesktop-setup-x64.*.exe" -ErrorAction SilentlyContinue | Remove-Item -Force
           $setupArgs = @(
             '/dSkipSign',
             "/dMyAppVersion=$version",
@@ -570,14 +571,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: oxDesktop-windows-installer
-          path: tdesktop/out/Release/oxDesktop-setup-x64.*.exe
+          path: tdesktop/out/Release/oxDesktop-setup-x64.${{ env.BUILD_VERSION }}.exe
           compression-level: 9
 
       - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
           name: oxDesktop-windows-portable
-          path: oxDesktop-portable-x64.*.zip
+          path: oxDesktop-portable-x64.${{ env.BUILD_VERSION }}.zip
           compression-level: 9
 
       - name: Publish out build tree to Release (4 volumes)
