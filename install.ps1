@@ -1,6 +1,6 @@
-# oxDesktop Windows Native Installer
+# VionDesktop Windows Native Installer
 # Usage:
-#   irm https://raw.githubusercontent.com/nanodevmc/oxDesktop/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/gum565/VionDesktop/main/install.ps1 | iex
 
 [CmdletBinding()]
 param(
@@ -57,11 +57,11 @@ function Write-Err($ruText, $enText) {
     }
 }
 
-Write-Title "Установщик oxDesktop" "oxDesktop Installer"
+Write-Title "Установщик VionDesktop" "VionDesktop Installer"
 Write-Step "Определено: Windows x64" "Detected: Windows x64"
 
-$repo = "nanodevmc/oxDesktop"
-$headers = @{ "User-Agent" = "oxDesktop-Installer" }
+$repo = "gum565/VionDesktop"
+$headers = @{ "User-Agent" = "VionDesktop-Installer" }
 
 Write-Step "Поиск последнего релиза на GitHub..." "Checking latest release on GitHub..."
 
@@ -94,7 +94,7 @@ try {
 
 if (-not $release -or -not $release.assets -or $release.assets.Count -eq 0) {
     Write-Warn "Релизы с бинарными сборками еще подготавливаются к публикации." "Release binaries are currently being prepared for publishing."
-    Write-Warn "Следите за обновлениями в официальном канале: https://t.me/oxDesktop" "Stay tuned in the official channel: https://t.me/oxDesktop"
+    Write-Warn "Следите за обновлениями в официальном канале: https://t.me/VionDesktop" "Stay tuned in the official channel: https://t.me/VionDesktop"
     return
 }
 
@@ -124,11 +124,11 @@ try {
     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $outPath -UseBasicParsing
 
     if ($Portable) {
-        $targetDir = if ($Prefix) { $Prefix } else { Join-Path $env:LOCALAPPDATA "oxDesktop" }
+        $targetDir = if ($Prefix) { $Prefix } else { Join-Path $env:LOCALAPPDATA "VionDesktop" }
         Write-Step "Распаковка в $targetDir..." "Extracting to $targetDir..."
         if (Test-Path $targetDir) { Remove-Item -Recurse -Force $targetDir }
         Expand-Archive -Path $outPath -DestinationPath $targetDir -Force
-        Write-Step "Готово! Запуск: $targetDir\oxDesktop.exe" "Ready! Launch: $targetDir\oxDesktop.exe"
+        Write-Step "Готово! Запуск: $targetDir\VionDesktop.exe" "Ready! Launch: $targetDir\VionDesktop.exe"
     } else {
         $installerPath = $outPath
         if ($outPath.EndsWith(".zip", [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -144,7 +144,7 @@ try {
         Write-Step "Запуск тихого установщика Windows..." "Launching Windows silent installer..."
         $proc = Start-Process -FilePath $installerPath -ArgumentList "/SILENT", "/NORESTART", "/SP-" -Wait -PassThru
         if ($proc.ExitCode -eq 0) {
-            Write-Step "Установка oxDesktop успешно завершена!" "oxDesktop installation successfully completed!"
+            Write-Step "Установка VionDesktop успешно завершена!" "VionDesktop installation successfully completed!"
         } else {
             Write-Warn "Код завершения установщика: $($proc.ExitCode)" "Installer exit code: $($proc.ExitCode)"
         }
