@@ -197,6 +197,7 @@ void Check(Fn<void(CheckResult)> done = nullptr) {
 		state.assetUrl = QString();
 		state.assetName = QString();
 		state.assetSha256 = QString();
+		state.downloaded = QString();
 		for (const auto &asset : object.value(u"assets"_q).toArray()) {
 			const auto info = asset.toObject();
 			const auto name = info.value(u"name"_q).toString();
