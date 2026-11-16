@@ -1,9 +1,9 @@
-﻿#define MyAppShortName "oxDesktop"
-#define MyAppName "oxDesktop"
-#define MyAppPublisher "oxDesktop"
-#define MyAppURL "https://exteradesktop.xyz"
-#define MyAppExeName "oxDesktop.exe"
-#define MyAppId "7D324782-E0D8-4A3C-BCF8-ECABD916542F"
+﻿#define MyAppShortName "VionDesktop"
+#define MyAppName "VionDesktop"
+#define MyAppPublisher "VionDesktop"
+#define MyAppURL "https://github.com/gum565/VionDesktop"
+#define MyAppExeName "VionDesktop.exe"
+#define MyAppId "9F0A7E31-6C42-4B91-8D75-2A6E51C804D3"
 #define CurrentYear GetDateTimeString('yyyy','','')
 
 [Setup]
@@ -24,7 +24,7 @@ AllowNoIcons=yes
 OutputDir={#ReleasePath}
 SetupIconFile={#SourcePath}..\Resources\art\icon256.ico
 UninstallDisplayName={#MyAppName}
-UninstallDisplayIcon={app}\oxDesktop.exe
+UninstallDisplayIcon={app}\VionDesktop.exe
 Compression=lzma2/max
 SolidCompression=yes
 DisableStartupPrompt=yes
@@ -87,7 +87,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "tgws"; Description: "{cm:TgWsProxy}"; GroupDescription: "{cm:Components}"
 
 [Files]
-Source: "{#ReleasePath}\oxDesktop.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ReleasePath}\VionDesktop.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleasePath}\oxWsProxy.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 #if FileExists(ReleasePath + "\\Updater.exe")
 Source: "{#ReleasePath}\Updater.exe"; DestDir: "{app}"; Flags: ignoreversion
