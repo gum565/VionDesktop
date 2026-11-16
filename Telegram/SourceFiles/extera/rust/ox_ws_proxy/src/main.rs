@@ -29,15 +29,15 @@ const PROTO_TAG_ABRIDGED: [u8; 4] = [0xef, 0xef, 0xef, 0xef];
 const PROTO_TAG_INTERMEDIATE: [u8; 4] = [0xee, 0xee, 0xee, 0xee];
 const PROTO_TAG_SECURE: [u8; 4] = [0xdd, 0xdd, 0xdd, 0xdd];
 
-const SNI_CANDIDATES: &[&str] = &["sprinthost.ru", "vk.com", "yandex.ru"];
+const SNI_CANDIDATES: &[&str] = &["vk.com", "sprinthost.ru"];
 
 fn get_dc_ips(dc: u8) -> &'static [&'static str] {
     match dc {
-        1 => &["149.154.175.50", "149.154.175.53", "149.154.167.220"],
+        1 => &["149.154.167.220", "149.154.175.50", "149.154.175.53"],
         2 => &["149.154.167.220", "149.154.167.50"],
-        3 => &["149.154.175.100", "149.154.167.220"],
-        4 => &["149.154.167.91", "149.154.167.220"],
-        5 => &["149.154.171.5", "149.154.167.220"],
+        3 => &["149.154.167.220", "149.154.175.100"],
+        4 => &["149.154.167.220", "149.154.167.91"],
+        5 => &["149.154.167.220", "149.154.171.5"],
         _ => &["149.154.167.220"],
     }
 }
@@ -465,13 +465,34 @@ async fn handle_client(
     let mut ws_stream = None;
     let ips = get_dc_ips(actual_dc);
 
-    let candidate_hosts = if is_media {
-        vec![
-            format!("kws{}-1.web.telegram.org", actual_dc),
-            format!("kws{}.web.telegram.org", actual_dc),
-        ]
-    } else {
-        vec![format!("kws{}.web.telegram.org", actual_dc)]
+    let candidate_hosts: Vec<String> = match actual_dc {
+        2 => if is_media {
+            vec![
+                "kws2-1.web.telegram.org".to_string(),
+                "kws2.web.telegram.org".to_string(),
+            ]
+        } else {
+            vec!["kws2.web.telegram.org".to_string()]
+        },
+        4 => if is_media {
+            vec![
+                "vesta-1.web.telegram.org".to_string(),
+                "kws4.web.telegram.org".to_string(),
+            ]
+        } else {
+            vec![
+                "kws4.web.telegram.org".to_string(),
+                "vesta-1.web.telegram.org".to_string(),
+            ]
+        },
+        _ => if is_media {
+            vec![
+                "kws2-1.web.telegram.org".to_string(),
+                "kws2.web.telegram.org".to_string(),
+            ]
+        } else {
+            vec!["kws2.web.telegram.org".to_string()]
+        },
     };
 
     // 1. Primary: TLS Domain Fronting directly to Telegram DC IP
@@ -479,7 +500,7 @@ async fn handle_client(
         for &ip in ips {
             for sni in SNI_CANDIDATES {
                 match tokio::time::timeout(
-                    Duration::from_millis(2500),
+                    Duration::from_millis(1500),
                     connect_fronted_ws(ip, target_host, sni, &tls_connector),
                 )
                 .await
@@ -520,7 +541,7 @@ async fn handle_client(
         for target_host in &candidate_hosts {
             let direct_url = format!("wss://{}/apiws", target_host);
             match tokio::time::timeout(
-                Duration::from_secs(4),
+                Duration::from_millis(1500),
                 tokio_tungstenite::connect_async(&direct_url),
             )
             .await
@@ -540,10 +561,10 @@ async fn handle_client(
     // 3. Fallback to Cloudflare workers if direct fails
     if ws_stream.is_none() {
         let primary_ip = ips[0];
-        for cf_domain in cf_domains.iter() {
+        for cf_domain in cf_domains.iter().take(2) {
             let cf_url = format!("wss://{}/apiws?dst={}&dc={}", cf_domain, primary_ip, actual_dc);
             match tokio::time::timeout(
-                Duration::from_secs(4),
+                Duration::from_millis(1500),
                 tokio_tungstenite::connect_async(&cf_url),
             )
             .await
@@ -566,7 +587,7 @@ async fn handle_client(
         let mut connected_ip = "";
         for &fallback_ip in ips {
             logger.log(&format!("[{}] Trying direct TCP fallback to {}:443 for DC{}", peer, fallback_ip, actual_dc)).await;
-            if let Ok(Ok(tcp_stream)) = tokio::time::timeout(Duration::from_secs(3), TcpStream::connect(format!("{}:443", fallback_ip))).await {
+            if let Ok(Ok(tcp_stream)) = tokio::time::timeout(Duration::from_millis(1500), TcpStream::connect(format!("{}:443", fallback_ip))).await {
                 logger.log(&format!("[{}] Connected via direct TCP fallback to {}:443", peer, fallback_ip)).await;
                 connected_tcp = Some(tcp_stream);
                 connected_ip = fallback_ip;

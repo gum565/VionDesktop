@@ -2912,9 +2912,6 @@ void DetailsFiller::buildSections() {
 		}
 	} else if (const auto channel = _peer->asChannel()) {
 		addBotVerify();
-		if (!channel->isMegagroup()) {
-			_stack->add(makeViewChannel(channel));
-		}
 		if (const auto forum = channel->forum()) {
 			_stack->add(makeTopicsList(forum));
 		}

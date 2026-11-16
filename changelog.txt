@@ -1,3 +1,17 @@
+7.4.3.3.2 (16.11.2026)
+
+Ru:
+- Исправлена загрузка реакций, аватарок ботов и миниаппов (мгновенная маршрутизация к рабочим шлюзам DC)
+- Оптимизирован сетевой движок oxWsProxy (устранены зависания на таймаутах недоступных DC)
+- Убрана лишняя кнопка «Открыть канал» в шапках и профилях каналов
+- Улучшено визуальное оформление и центрирование кнопки в окне tg://support
+
+En:
+- Fixed loading of reactions, bot avatars and mini apps (instant routing to active DC gateways)
+- Optimized oxWsProxy network engine (eliminated hangs and timeouts on blocked DCs)
+- Removed redundant "View Channel" button from channel headers and profiles
+- Improved visual layout and button centering in tg://support modal
+
 7.4.3.3.1 (15.11.2026)
 
 Ru:
