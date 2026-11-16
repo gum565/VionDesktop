@@ -218,6 +218,10 @@ void Check(Fn<void(CheckResult)> done = nullptr) {
 				state.assetName = name;
 				state.assetUrl = info.value(
 					u"browser_download_url"_q).toString();
+				const auto digest = info.value(u"digest"_q).toString();
+				if (digest.startsWith(u"sha256:"_q)) {
+					state.assetSha256 = digest.mid(7);
+				}
 				break;
 			}
 #elif defined Q_OS_MAC
@@ -226,6 +230,10 @@ void Check(Fn<void(CheckResult)> done = nullptr) {
 				state.assetName = name;
 				state.assetUrl = info.value(
 					u"browser_download_url"_q).toString();
+				const auto digest = info.value(u"digest"_q).toString();
+				if (digest.startsWith(u"sha256:"_q)) {
+					state.assetSha256 = digest.mid(7);
+				}
 				break;
 			}
 #endif
