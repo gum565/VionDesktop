@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE_TAG: oxdesktop:centos_env
+      IMAGE_TAG: viondesktop:centos_env
 
     steps:
       - name: Clone
@@ -66,13 +66,13 @@ jobs:
               echo "No C++ core changes detected between $LAST_SHA and HEAD!"
               echo "Fetching prebuilt Linux binary from run $LAST_ID..."
               mkdir -p temp_prev_linux
-              if gh run download "$LAST_ID" -n oxDesktop-linux-x64 --dir temp_prev_linux 2>/dev/null; then
+              if gh run download "$LAST_ID" -n VionDesktop-linux-x64 --dir temp_prev_linux 2>/dev/null; then
                 TAR_FILE=$(find temp_prev_linux -name "*.tar.gz" | head -n 1)
                 if [ -n "$TAR_FILE" ]; then
                   mkdir -p out/Release pkg
                   tar -xzf "$TAR_FILE" -C out/Release/ || true
                   tar -xzf "$TAR_FILE" -C pkg/ 2>/dev/null || true
-                  if [ -f "out/Release/Telegram" ] || [ -f "pkg/oxDesktop/oxDesktop-bin" ] || [ -f "out/Release/oxDesktop/oxDesktop-bin" ]; then
+                  if [ -f "out/Release/Telegram" ] || [ -f "pkg/VionDesktop/VionDesktop-bin" ] || [ -f "out/Release/VionDesktop/VionDesktop-bin" ]; then
                     echo "Telegram prebuilt binary restored successfully from run $LAST_ID!"
                     NEED_BUILD=false
                   fi
@@ -120,7 +120,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           command -v zstd >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y zstd; }
-          ARCHIVE="oxDesktop-centos-env.tar.zst"
+          ARCHIVE="VionDesktop-centos-env.tar.zst"
           if gh release download ci-cache -R "$GH_REPO" -p "$ARCHIVE" 2>/dev/null; then
             echo "Found prebuilt Docker environment in release! Loading..."
             zstd -d -c "$ARCHIVE" | docker load
@@ -147,7 +147,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           command -v zstd >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y zstd; }
-          ARCHIVE="oxDesktop-centos-env.tar.zst"
+          ARCHIVE="VionDesktop-centos-env.tar.zst"
           echo "Exporting and compressing Docker image $IMAGE_TAG..."
           docker save "$IMAGE_TAG" | zstd -3 -T0 -o "$ARCHIVE"
           ls -lh "$ARCHIVE"
@@ -270,17 +270,17 @@ jobs:
             VERSION="${GITHUB_REF_NAME#v}"
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          if [ "${{ steps.diff_check.outputs.skip_cpp_build }}" = "true" ] && [ -d "pkg/oxDesktop" ]; then
+          if [ "${{ steps.diff_check.outputs.skip_cpp_build }}" = "true" ] && [ -d "pkg/VionDesktop" ]; then
             echo "Fast packaging without Docker..."
-            PKG="pkg/oxDesktop"
+            PKG="pkg/VionDesktop"
             if [ -f Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy ]; then
               cp Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy "$PKG/oxWsProxy"
               chmod +x "$PKG/oxWsProxy"
             fi
             mkdir -p "$PKG/python/extera"
             cp -r Telegram/SourceFiles/extera/python/. "$PKG/python/extera/"
-            chmod +x "$PKG/oxDesktop" "$PKG/oxDesktop-bin" 2>/dev/null || true
-            GZIP="-9" tar -C pkg -czf "oxDesktop-linux-x64.$VERSION.tar.gz" oxDesktop
+            chmod +x "$PKG/VionDesktop" "$PKG/VionDesktop-bin" 2>/dev/null || true
+            GZIP="-9" tar -C pkg -czf "VionDesktop-linux-x64.$VERSION.tar.gz" VionDesktop
           else
             docker run --rm \
               -u "$(id -u)" \
@@ -289,11 +289,11 @@ jobs:
               "$IMAGE_TAG" \
               bash -euo pipefail -c '
                 cd /usr/src/tdesktop
-                PKG="pkg/oxDesktop"
+                PKG="pkg/VionDesktop"
                 rm -rf pkg
                 mkdir -p "$PKG/lib" "$PKG/python" "$PKG/python311/lib"
-                cp out/Release/Telegram "$PKG/oxDesktop-bin"
-                strip "$PKG/oxDesktop-bin"
+                cp out/Release/Telegram "$PKG/VionDesktop-bin"
+                strip "$PKG/VionDesktop-bin"
                 if [ -f Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy ]; then
                   cp Telegram/SourceFiles/extera/rust/ox_ws_proxy/target/release/ox_ws_proxy "$PKG/oxWsProxy"
                   chmod +x "$PKG/oxWsProxy"
@@ -306,18 +306,18 @@ jobs:
                 ln -sf lib "$PKG/python311/lib64"
                 mkdir -p "$PKG/python/extera"
                 cp -r Telegram/SourceFiles/extera/python/. "$PKG/python/extera/"
-                cp Telegram/SourceFiles/extera/oxDesktop-launcher.sh "$PKG/oxDesktop"
-                chmod +x "$PKG/oxDesktop" "$PKG/oxDesktop-bin"
-                GZIP="-9" tar -C pkg -czf "oxDesktop-linux-x64.$VERSION.tar.gz" oxDesktop
+                cp Telegram/SourceFiles/extera/oxDesktop-launcher.sh "$PKG/VionDesktop"
+                chmod +x "$PKG/VionDesktop" "$PKG/VionDesktop-bin"
+                GZIP="-9" tar -C pkg -czf "VionDesktop-linux-x64.$VERSION.tar.gz" VionDesktop
               '
           fi
-          ls -la "oxDesktop-linux-x64.$VERSION.tar.gz"
+          ls -la "VionDesktop-linux-x64.$VERSION.tar.gz"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oxDesktop-linux-x64
-          path: oxDesktop-linux-x64.*.tar.gz
+          name: VionDesktop-linux-x64
+          path: VionDesktop-linux-x64.*.tar.gz
           compression-level: 9
           retention-days: 7
 
@@ -355,8 +355,8 @@ jobs:
           XVFB_PID=$!
           sleep 3
 
-          PKG="./pkg/oxDesktop/oxDesktop"
-          chmod +x "$PKG" ./pkg/oxDesktop/oxDesktop-bin
+          PKG="./pkg/VionDesktop/VionDesktop"
+          chmod +x "$PKG" ./pkg/VionDesktop/VionDesktop-bin
           SHOTS_DIR="$PWD/screenshots"
 
           dbus-run-session bash -c "
@@ -401,7 +401,7 @@ jobs:
             sleep 2
 
             echo 'Capturing Main window...'
-            $PKG -many -workdir /tmp/prof_main --demo-mode --demo-view main --demo-screenshot '$SHOTS_DIR/oxdesktop.png' --demo-delay 3500 --demo-exit || true
+            $PKG -many -workdir /tmp/prof_main --demo-mode --demo-view main --demo-screenshot '$SHOTS_DIR/viondesktop.png' --demo-delay 3500 --demo-exit || true
           "
 
           echo "Recording 15s intro animation video..."
@@ -414,7 +414,7 @@ jobs:
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: oxdesktop-screenshots-linux
+          name: viondesktop-screenshots-linux
           path: |
             screenshots/*.png
             screenshots/*.mp4
@@ -426,5 +426,5 @@ jobs:
         if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'ci-cache') && !contains(github.event.release.tag_name, 'cache')
         uses: softprops/action-gh-release@v2
         with:
-          files: oxDesktop-linux-x64.*.tar.gz
+          files: VionDesktop-linux-x64.*.tar.gz
           overwrite_files: true
