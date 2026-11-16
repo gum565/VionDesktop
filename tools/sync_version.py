@@ -17,6 +17,20 @@ import re
 import sys
 
 
+def write_if_changed(path, new_content):
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                if f.read() == new_content:
+                    return False
+        except Exception:
+            pass
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(new_content)
+    return True
+
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.abspath(os.path.join(script_dir, ".."))
@@ -57,10 +71,10 @@ def main():
         f"AlphaVersion       0\n"
         f"AppVersionOriginal {version_str}\n"
     )
-    os.makedirs(os.path.dirname(build_version_path), exist_ok=True)
-    with open(build_version_path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(build_version_content)
-    print(f"[sync_version] Updated {build_version_path}")
+    if write_if_changed(build_version_path, build_version_content):
+        print(f"[sync_version] Updated {build_version_path}")
+    else:
+        print(f"[sync_version] Unchanged: {build_version_path}")
 
     # 2. Generate Telegram/SourceFiles/version_generated.h (dynamic from version.txt)
     gen_header_path = os.path.join(root_dir, "Telegram", "SourceFiles", "version_generated.h")
@@ -70,9 +84,10 @@ def main():
         f'#define APP_VERSION "{version_str}"\n'
         f'#define APP_VERSION_FULL {version_full}\n'
     )
-    with open(gen_header_path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(gen_content)
-    print(f"[sync_version] Generated {gen_header_path}")
+    if write_if_changed(gen_header_path, gen_content):
+        print(f"[sync_version] Generated {gen_header_path}")
+    else:
+        print(f"[sync_version] Unchanged: {gen_header_path}")
 
     # 4. Update Windows Resource Telegram.rc
     telegram_rc_path = os.path.join(root_dir, "Telegram", "Resources", "winrc", "Telegram.rc")
@@ -83,9 +98,10 @@ def main():
         rc_content = re.sub(r"(PRODUCTVERSION\s+)\d+,\d+,\d+,\d+", rf"\g<1>{version_4_comma}", rc_content)
         rc_content = re.sub(r'("FileVersion",\s*)"[^"]*"', rf'\g<1>"{version_str}"', rc_content)
         rc_content = re.sub(r'("ProductVersion",\s*)"[^"]*"', rf'\g<1>"{version_str}"', rc_content)
-        with open(telegram_rc_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(rc_content)
-        print(f"[sync_version] Updated {telegram_rc_path}")
+        if write_if_changed(telegram_rc_path, rc_content):
+            print(f"[sync_version] Updated {telegram_rc_path}")
+        else:
+            print(f"[sync_version] Unchanged: {telegram_rc_path}")
 
     # 5. Update Windows Resource Updater.rc
     updater_rc_path = os.path.join(root_dir, "Telegram", "Resources", "winrc", "Updater.rc")
@@ -96,9 +112,10 @@ def main():
         rc_content = re.sub(r"(PRODUCTVERSION\s+)\d+,\d+,\d+,\d+", rf"\g<1>{version_4_comma}", rc_content)
         rc_content = re.sub(r'("FileVersion",\s*)"[^"]*"', rf'\g<1>"{version_str}"', rc_content)
         rc_content = re.sub(r'("ProductVersion",\s*)"[^"]*"', rf'\g<1>"{version_str}"', rc_content)
-        with open(updater_rc_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(rc_content)
-        print(f"[sync_version] Updated {updater_rc_path}")
+        if write_if_changed(updater_rc_path, rc_content):
+            print(f"[sync_version] Updated {updater_rc_path}")
+        else:
+            print(f"[sync_version] Unchanged: {updater_rc_path}")
 
     # 6. Update UWP AppxManifest.xml
     appx_path = os.path.join(root_dir, "Telegram", "Resources", "uwp", "AppX", "AppxManifest.xml")
@@ -106,9 +123,10 @@ def main():
         with open(appx_path, "r", encoding="utf-8") as f:
             appx_content = f.read()
         appx_content = re.sub(r'( Version=)"[^"]*"', rf'\g<1>"{version_4_dot}"', appx_content)
-        with open(appx_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(appx_content)
-        print(f"[sync_version] Updated {appx_path}")
+        if write_if_changed(appx_path, appx_content):
+            print(f"[sync_version] Updated {appx_path}")
+        else:
+            print(f"[sync_version] Unchanged: {appx_path}")
 
     # 7. Update Flatpak AppStream metainfo
     flatpak_path = os.path.join(root_dir, "flatpak", "io.github.nanodevmc.oxDesktop.metainfo.xml")
@@ -127,9 +145,10 @@ def main():
             meta_content,
             count=1
         )
-        with open(flatpak_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(meta_content)
-        print(f"[sync_version] Updated {flatpak_path}")
+        if write_if_changed(flatpak_path, meta_content):
+            print(f"[sync_version] Updated {flatpak_path}")
+        else:
+            print(f"[sync_version] Unchanged: {flatpak_path}")
 
     print(f"[sync_version] Version successfully synchronized to {version_str} (full={version_full}, 4part={version_4_dot})")
 
