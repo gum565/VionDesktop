@@ -9,6 +9,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonArray>
 #include <QtCore/QProcess>
+#include <QtCore/QCryptographicHash>
 
 #include "base/timer.h"
 #include "core/version.h"
@@ -35,6 +36,7 @@ struct State {
 	QString url;
 	QString assetUrl;
 	QString assetName;
+	QString assetSha256;
 	QString downloaded;
 	bool downloading = false;
 	bool installAfterDownload = false;
@@ -105,7 +107,8 @@ void RunInstaller(const QString &path) {
 
 void Download(bool install) {
 	auto &state = Instance();
-	if (!Installed() || state.assetUrl.isEmpty() || state.assetName.isEmpty()) {
+	if (!Installed() || state.assetUrl.isEmpty() || state.assetName.isEmpty()
+		|| state.assetSha256.size() != 64) {
 		return;
 	}
 	state.installAfterDownload = state.installAfterDownload || install;
@@ -135,7 +138,13 @@ void Download(bool install) {
 			return;
 		}
 		const auto bytes = reply->readAll();
-		if (bytes.size() < 1024) {
+		const auto actualSha256 = QCryptographicHash::hash(
+			bytes, QCryptographicHash::Sha256).toHex();
+		if (bytes.size() < 1024
+			|| actualSha256.compare(state.assetSha256, Qt::CaseInsensitive) != 0) {
+			state.assetUrl = QString();
+			state.assetName = QString();
+			state.assetSha256 = QString();
 			return;
 		}
 		const auto folder = QDir::tempPath() + u"/VionDesktop/update"_q;
@@ -187,6 +196,7 @@ void Check(Fn<void(CheckResult)> done = nullptr) {
 		state.url = object.value(u"html_url"_q).toString();
 		state.assetUrl = QString();
 		state.assetName = QString();
+		state.assetSha256 = QString();
 		for (const auto &asset : object.value(u"assets"_q).toArray()) {
 			const auto info = asset.toObject();
 			const auto name = info.value(u"name"_q).toString();
@@ -196,6 +206,10 @@ void Check(Fn<void(CheckResult)> done = nullptr) {
 				state.assetName = name;
 				state.assetUrl = info.value(
 					u"browser_download_url"_q).toString();
+				const auto digest = info.value(u"digest"_q).toString();
+				if (digest.startsWith(u"sha256:"_q)) {
+					state.assetSha256 = digest.mid(7);
+				}
 				break;
 			}
 #elif defined Q_OS_LINUX
