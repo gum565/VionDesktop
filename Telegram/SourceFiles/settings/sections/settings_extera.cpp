@@ -868,7 +868,6 @@ void ShowBadgeInfoBox(not_null<Window::SessionController*> controller) {
 				st::defaultBoxButton),
 			style::margins(16, 8, 16, 16),
 			style::al_center);
-		button->setTextTransform(Ui::RoundButton::TextTransform::NoTransform);
 		button->setClickedCallback([=] {
 			UrlClickHandler::Open(u"https://t.me/exteraAuthBot/donate"_q);
 		});
